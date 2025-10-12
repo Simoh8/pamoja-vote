@@ -1,0 +1,66 @@
+<!-- AIzaSyBL_xkgqFUSMCttJhEl6WidmXcr_FG16lg -->
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Kenya Election Map</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.Default.css" />
+  <style>
+    #map { height: 100vh; }
+    .info { background:white; padding:5px; }
+  </style>
+</head>
+<body>
+<div id="map"></div>
+
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet.markercluster/dist/leaflet.markercluster.js"></script>
+
+<script>
+var map = L.map('map').setView([0.0236, 37.9062], 6);
+
+// Base layer
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; OpenStreetMap contributors'
+}).addTo(map);
+
+// Function to load GeoJSON layers
+function loadGeoJSON(url, style, popupProp) {
+    fetch(url)
+        .then(res => res.json())
+        .then(data => {
+            L.geoJSON(data, {
+                style: style,
+                onEachFeature: function(feature, layer) {
+                    if(popupProp) {
+                        layer.bindPopup(feature.properties[popupProp]);
+                    }
+                }
+            }).addTo(map);
+        });
+}
+
+// Load County, Constituency, Ward layers
+loadGeoJSON('kenya_counties.geojson', {color:'blue', weight:2, fillOpacity:0.1}, 'COUNTY_NAM');
+loadGeoJSON('kenya_constituencies.geojson', {color:'green', weight:1, fillOpacity:0.1}, 'CONST_NAME');
+loadGeoJSON('kenya_wards.geojson', {color:'orange', weight:0.5, fillOpacity:0.05}, 'NAME');
+
+// Load polling stations with clustering
+var markers = L.markerClusterGroup();
+fetch('polling_stations.geojson')
+    .then(res => res.json())
+    .then(data => {
+        L.geoJSON(data, {
+            pointToLayer: function(feature, latlng) {
+                return L.marker(latlng).bindPopup(feature.properties.name);
+            }
+        }).eachLayer(layer => markers.addLayer(layer));
+        map.addLayer(markers);
+    });
+
+</script>
+</body>
+</html>
