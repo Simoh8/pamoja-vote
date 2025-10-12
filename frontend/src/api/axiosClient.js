@@ -8,10 +8,10 @@ const apiClient = axios.create({
   },
 });
 
-// Request interceptor to add auth token
 apiClient.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('access_token');
+    console.log('API Request:', config.method?.toUpperCase(), config.url, 'Auth:', !!token);
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -22,7 +22,6 @@ apiClient.interceptors.request.use(
   }
 );
 
-// Response interceptor to handle token refresh
 apiClient.interceptors.response.use(
   (response) => response,
   async (error) => {

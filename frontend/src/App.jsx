@@ -8,8 +8,10 @@ import { AnimatePresence } from 'framer-motion';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Squad from './pages/Squad';
+import JoinSquad from './pages/JoinSquad';
 import CreateSquad from './pages/CreateSquad';
 import Centers from './pages/Centers';
+import FindCenters from './pages/FindCenters';
 import CreateEvent from './pages/CreateEvent';
 import Leaderboard from './pages/Leaderboard';
 import Profile from './pages/Profile';
@@ -49,6 +51,9 @@ function App() {
                 {/* Public routes */}
                 <Route path="/login" element={<Login />} />
 
+                {/* Dashboard redirect for /dashboard URL */}
+                <Route path="/dashboard" element={<Navigate to="/" replace />} />
+
                 {/* Protected routes */}
                 <Route
                   path="/"
@@ -75,6 +80,18 @@ function App() {
                 />
 
                 <Route
+                  path="/join-squad"
+                  element={
+                    <PrivateRoute>
+                      <div className="pb-16">
+                        <Navbar />
+                        <JoinSquad />
+                      </div>
+                    </PrivateRoute>
+                  }
+                />
+
+                <Route
                   path="/squad/create"
                   element={
                     <PrivateRoute>
@@ -93,6 +110,18 @@ function App() {
                       <div className="pb-16">
                         <Navbar />
                         <Centers />
+                      </div>
+                    </PrivateRoute>
+                  }
+                />
+
+                <Route
+                  path="/find-centers"
+                  element={
+                    <PrivateRoute>
+                      <div className="pb-16">
+                        <Navbar />
+                        <FindCenters />
                       </div>
                     </PrivateRoute>
                   }
