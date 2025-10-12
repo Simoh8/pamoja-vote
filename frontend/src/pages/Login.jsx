@@ -2,12 +2,11 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useMutation } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Phone, MessageCircle, ArrowLeft, Loader2 } from 'lucide-react';
+import { Phone, MessageCircle, ArrowLeft } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { authAPI } from '../api/axiosClient';
+import { authAPI } from '../api';
 import { Button, Input, Card, Alert, OtpInput } from '../components/ui';
 
-// Animation variants
 const containerVariants = {
   hidden: { opacity: 0 },
   visible: {
@@ -32,8 +31,14 @@ const itemVariants = {
   },
 };
 
+const formVariants = {
+  hidden: { opacity: 0, x: 20 },
+  visible: { opacity: 1, x: 0 },
+  exit: { opacity: 0, x: -20 }
+};
+
 const Login = () => {
-  const [step, setStep] = useState('phone'); // 'phone' or 'otp'
+  const [step, setStep] = useState('phone');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [otp, setOtp] = useState('');
   const [error, setError] = useState('');
@@ -43,12 +48,9 @@ const Login = () => {
   const navigate = useNavigate();
   const { login } = useAuth();
 
-  // Debug: Track step changes
   useEffect(() => {
-    console.log('Step changed to:', step);
   }, [step]);
 
-  // Start resend timer when OTP is sent
   useEffect(() => {
     if (step === 'otp' && resendTimer > 0) {
       const timer = setTimeout(() => setResendTimer(prev => prev - 1), 1000);
@@ -56,11 +58,8 @@ const Login = () => {
     }
   }, [resendTimer, step]);
 
-  // Format phone number as user types
   const handlePhoneChange = (e) => {
-    const value = e.target.value.replace(/\D/g, ''); // Remove non-digits
-    
-    // Format as +254 XXX XXX XXX
+    const value = e.target.value.replace(/\D/g, '');
     let formatted = '';
     if (value.length > 0) {
       formatted = `+${value.substring(0, 3)}`;
@@ -74,53 +73,37 @@ const Login = () => {
         formatted += ` ${value.substring(9, 12)}`;
       }
     }
-    
     setPhoneNumber(formatted);
   };
 
-  // Send OTP mutation
   const sendOTPMutation = useMutation({
     mutationFn: async (phone) => {
-      // Remove formatting for API call
       const cleanPhone = phone.replace(/\s+/g, '');
-      console.log('Making API call to send OTP for:', cleanPhone);
       const result = await authAPI.sendOTP(cleanPhone);
-      console.log('API response:', result);
       return result;
     },
     onMutate: () => {
-      console.log('Starting OTP send mutation');
       setLoading(true);
       setError('');
     },
     onSuccess: (data) => {
-      console.log('OTP send successful, data:', data);
-      console.log('Setting step to otp');
       setStep('otp');
-      console.log('Step should now be otp');
-      setResendTimer(30); // 30 seconds cooldown
+      setResendTimer(30);
 
-      // In development, show the OTP from the response
-      if (import.meta.env.DEV && data?.data?.otp) {
-        console.log('Setting OTP from response:', data.data.otp);
-        setOtp(data.data.otp);
+      if (import.meta.env.DEV && data?.otp) {
+        setOtp(data.otp);
       }
     },
     onError: (error) => {
-      console.error('Send OTP error:', error);
-      console.error('Error response:', error.response);
       setError(error.response?.data?.message || 'Failed to send OTP. Please try again.');
     },
     onSettled: () => {
-      console.log('OTP send mutation settled');
       setLoading(false);
     },
   });
 
-  // Verify OTP mutation
   const verifyOTPMutation = useMutation({
     mutationFn: ({ phone, otp }) => {
-      // Remove formatting for API call
       const cleanPhone = phone.replace(/\s+/g, '');
       return authAPI.verifyOTP(cleanPhone, otp);
     },
@@ -129,12 +112,11 @@ const Login = () => {
       setError('');
     },
     onSuccess: (data) => {
-      const { user, access_token, refresh_token } = data.data;
+      const { user, access_token, refresh_token } = data;
       login(user, { access: access_token, refresh: refresh_token });
-      navigate('/dashboard');
+      navigate('/');
     },
     onError: (error) => {
-      console.error('OTP verification error:', error);
       setError(error.response?.data?.message || 'Invalid OTP. Please try again.');
     },
     onSettled: () => {
@@ -145,24 +127,13 @@ const Login = () => {
   const handlePhoneSubmit = async (e) => {
     e.preventDefault();
     if (!phoneNumber.trim()) return;
-
-    console.log('Submitting phone number:', phoneNumber);
-    try {
-      await sendOTPMutation.mutateAsync(phoneNumber);
-      console.log('OTP sent successfully');
-    } catch (error) {
-      console.error('Failed to send OTP:', error);
-    }
+    sendOTPMutation.mutate(phoneNumber);
   };
 
   const handleOTPSubmit = async (e) => {
     e?.preventDefault();
     if (!otp || otp.length < 6) return;
-    
-    verifyOTPMutation.mutate({ 
-      phone: phoneNumber, 
-      otp 
-    });
+    verifyOTPMutation.mutate({ phone: phoneNumber, otp });
   };
 
   const handleResendOTP = () => {
@@ -176,7 +147,6 @@ const Login = () => {
     setError('');
   };
 
-  // Format phone number for display
   const formatPhoneForDisplay = (phone) => {
     if (!phone) return '';
     const lastFour = phone.slice(-4);
@@ -236,133 +206,138 @@ const Login = () => {
               </motion.p>
             </div>
 
-            {/* Form Content */}
+            {/* Form Content - Simplified without complex animations */}
             <div className="p-6">
               <AnimatePresence mode="wait">
                 {step === 'phone' ? (
-                  <motion.form
+                  <motion.div
                     key="phone-form"
-                    initial={{ opacity: 0, x: -10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: 10 }}
-                    transition={{ duration: 0.2 }}
-                    onSubmit={handlePhoneSubmit}
-                    className="space-y-6"
+                    initial="hidden"
+                    animate="visible"
+                    exit="exit"
+                    variants={formVariants}
+                    transition={{ duration: 0.3 }}
                   >
-                    {console.log('Rendering phone form')}
-                    <motion.div variants={itemVariants}>
-                      <Input
-                        id="phone"
-                        label="Phone Number"
-                        type="tel"
-                        value={phoneNumber}
-                        onChange={handlePhoneChange}
-                        placeholder="+254 7XX XXX XXX"
-                        startIcon={Phone}
-                        required
-                      />
-                    </motion.div>
+                    <form onSubmit={handlePhoneSubmit} className="space-y-6">
+                      <motion.div variants={itemVariants}>
+                        <Input
+                          id="phone"
+                          label="Phone Number"
+                          type="tel"
+                          value={phoneNumber}
+                          onChange={handlePhoneChange}
+                          placeholder="+254 7XX XXX XXX"
+                          startIcon={Phone}
+                          required
+                        />
+                      </motion.div>
 
-                    <motion.div variants={itemVariants} className="pt-2">
-                      <Button 
-                        type="submit" 
-                        className="w-full"
-                        loading={loading}
-                        disabled={!phoneNumber.trim()}
-                      >
-                        <MessageCircle className="h-4 w-4 mr-2" />
-                        Send OTP
-                      </Button>
-                    </motion.div>
-                  </motion.form>
-                ) : (
-                  <motion.form
-                    key="otp-form"
-                    initial={{ opacity: 0, x: 10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: -10 }}
-                    transition={{ duration: 0.2 }}
-                    onSubmit={handleOTPSubmit}
-                    className="space-y-6"
-                  >
-                    {console.log('Rendering OTP form')}
-                    <motion.div variants={itemVariants} className="text-center">
-                      <p className="text-sm text-gray-600 mb-1">
-                        We've sent a verification code to
-                      </p>
-                      <p className="font-medium text-gray-900">
-                        {formatPhoneForDisplay(phoneNumber)}
-                      </p>
-                    </motion.div>
-
-                    <motion.div variants={itemVariants}>
-                      <div className="mb-2 text-sm font-medium text-gray-700">
-                        Enter OTP
-                      </div>
-                      <OtpInput
-                        value={otp}
-                        onChange={setOtp}
-                        onComplete={handleOTPSubmit}
-                        length={6}
-                        className="justify-center"
-                        inputClassName="h-12 w-12 text-lg"
-                      />
-                      <div className="mt-4 text-center">
-                        <button
-                          type="button"
-                          onClick={handleResendOTP}
-                          disabled={resendTimer > 0 || loading}
-                          className={`text-sm font-medium ${
-                            resendTimer > 0 ? 'text-gray-400' : 'text-blue-600 hover:text-blue-800'
-                          } transition-colors`}
+                      <motion.div variants={itemVariants} className="pt-2">
+                        <Button 
+                          type="submit" 
+                          className="w-full"
+                          loading={loading}
+                          disabled={!phoneNumber.trim()}
                         >
-                          {resendTimer > 0 
-                            ? `Resend OTP in ${resendTimer}s` 
-                            : "Didn't receive code? Resend"}
-                        </button>
-                      </div>
-                    </motion.div>
+                          <MessageCircle className="h-4 w-4 mr-2" />
+                          Send OTP
+                        </Button>
+                      </motion.div>
+                    </form>
+                  </motion.div>
+                ) : (
+                  <motion.div
+                    key="otp-form"
+                    initial="hidden"
+                    animate="visible"
+                    exit="exit"
+                    variants={formVariants}
+                    transition={{ duration: 0.3 }}
+                  >
+                    <form onSubmit={handleOTPSubmit} className="space-y-6">
+                      <motion.div variants={itemVariants} className="text-center">
+                        <p className="text-sm text-gray-600 mb-1">
+                          We've sent a verification code to
+                        </p>
+                        <p className="font-medium text-gray-900">
+                          {formatPhoneForDisplay(phoneNumber)}
+                        </p>
+                      </motion.div>
 
-                    <motion.div variants={itemVariants} className="space-y-3 pt-2">
-                      <Button 
-                        type="submit" 
-                        className="w-full"
-                        loading={loading}
-                        disabled={otp.length < 6}
-                      >
-                        Verify & Continue
-                      </Button>
-                      
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        className="w-full text-sm"
-                        onClick={handleBackToPhone}
-                        disabled={loading}
-                      >
-                        <ArrowLeft className="h-4 w-4 mr-1" />
-                        Back to phone number
-                      </Button>
-                    </motion.div>
-                  </motion.form>
+                      <motion.div variants={itemVariants}>
+                        <div className="mb-4 text-sm font-medium text-gray-700 text-center">
+                          Enter OTP
+                        </div>
+                        
+                        {/* OTP Input with visible styling */}
+                        <div className="flex justify-center p-2">
+                          <OtpInput
+                            value={otp}
+                            onChange={setOtp}
+                            onComplete={handleOTPSubmit}
+                            length={6}
+                            className="justify-center gap-2"
+                            inputClassName="w-12 h-12 text-lg font-semibold border-2 border-blue-500 rounded-lg bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                          />
+                        </div>
+                        
+                        <div className="mt-6 text-center">
+                          <button
+                            type="button"
+                            onClick={handleResendOTP}
+                            disabled={resendTimer > 0 || loading}
+                            className={`text-sm font-medium ${
+                              resendTimer > 0 ? 'text-gray-400' : 'text-blue-600 hover:text-blue-800'
+                            } transition-colors`}
+                          >
+                            {resendTimer > 0
+                              ? `Resend OTP in ${resendTimer}s`
+                              : "Didn't receive code? Resend"}
+                          </button>
+                        </div>
+                      </motion.div>
+
+                      <motion.div variants={itemVariants} className="space-y-3 pt-4">
+                        <Button 
+                          type="submit" 
+                          className="w-full"
+                          loading={loading}
+                          disabled={otp.length < 6}
+                        >
+                          Verify & Continue
+                        </Button>
+
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="w-full text-sm"
+                          onClick={handleBackToPhone}
+                          disabled={loading}
+                        >
+                          <ArrowLeft className="h-4 w-4 mr-1" />
+                          Back to phone number
+                        </Button>
+                      </motion.div>
+                    </form>
+                  </motion.div>
                 )}
               </AnimatePresence>
-
-              {/* Dev Mode OTP Helper */}
-              {import.meta.env.DEV && step === 'otp' && (
-                <motion.div 
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.5 }}
-                  className="mt-6 p-3 bg-yellow-50 border border-yellow-100 rounded-lg text-center"
-                >
-                  <p className="text-xs text-yellow-800">
-                    <span className="font-medium">Development Mode:</span> OTP is {otp || 'not set'}
-                  </p>
-                </motion.div>
-              )}
             </div>
+
+            {/* Debug Info */}
+            {import.meta.env.DEV && (
+              <motion.div 
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.5 }}
+                className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg mx-4 mb-4 text-center"
+              >
+                <p className="text-xs text-yellow-800">
+                  <span className="font-medium">Debug:</span> Step: {step} | OTP: {otp} | Length: {otp.length}
+                </p>
+              </motion.div>
+            )}
           </Card>
         </motion.div>
 

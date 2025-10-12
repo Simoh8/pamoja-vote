@@ -9,7 +9,7 @@ class SquadMemberSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = SquadMember
-        fields = ('id', 'user', 'role', 'joined_at')
+        fields = ('id', 'user', 'role', 'has_registered', 'joined_at')
         read_only_fields = ('joined_at',)
 
 
@@ -19,13 +19,15 @@ class SquadSerializer(serializers.ModelSerializer):
     members = SquadMemberSerializer(source='squad_members', many=True, read_only=True)
     member_count = serializers.ReadOnlyField()
     registration_progress = serializers.ReadOnlyField()
+    registration_center = serializers.StringRelatedField(read_only=True)
+    remaining_slots = serializers.ReadOnlyField()
 
     class Meta:
         model = Squad
         fields = ('id', 'name', 'description', 'goal_count', 'county',
-                 'is_public', 'owner', 'members', 'member_count',
-                 'registration_progress', 'created_at')
-        read_only_fields = ('id', 'owner', 'created_at', 'member_count', 'registration_progress')
+                 'is_public', 'voter_registration_date', 'owner', 'members', 'member_count',
+                 'registration_progress', 'registration_center', 'remaining_slots', 'created_at')
+        read_only_fields = ('id', 'owner', 'created_at', 'member_count', 'registration_progress', 'remaining_slots')
 
     def create(self, validated_data):
         validated_data['owner'] = self.context['request'].user
@@ -34,14 +36,37 @@ class SquadSerializer(serializers.ModelSerializer):
 
 class SquadCreateSerializer(serializers.ModelSerializer):
     """Serializer for creating squads"""
+    registration_center = serializers.UUIDField(required=False, allow_null=True)
 
     class Meta:
         model = Squad
-        fields = ('name', 'description', 'goal_count', 'county', 'is_public')
+        fields = ('name', 'description', 'goal_count', 'county', 'is_public', 'voter_registration_date', 'registration_center')
+
+    def validate_registration_center(self, value):
+        if value:
+            try:
+                from centers.models import Center
+                Center.objects.get(id=value)
+            except (Center.DoesNotExist, ValueError):
+                # Allow empty or invalid center IDs for now
+                return None
+        return value
 
     def create(self, validated_data):
+        registration_center_id = validated_data.pop('registration_center', None)
         validated_data['owner'] = self.context['request'].user
+
         squad = super().create(validated_data)
+
+        # Associate with registration center if provided
+        if registration_center_id:
+            try:
+                from centers.models import Center
+                center = Center.objects.get(id=registration_center_id)
+                squad.registration_center = center
+                squad.save()
+            except Center.DoesNotExist:
+                pass  # Center doesn't exist, continue without it
 
         # Add creator as leader
         SquadMember.objects.create(
@@ -59,8 +84,12 @@ class SquadJoinSerializer(serializers.Serializer):
 
     def validate_squad_id(self, value):
         try:
-            squad = Squad.objects.get(id=value, is_public=True)
+            squad = Squad.objects.get(id=value)
         except Squad.DoesNotExist:
+            raise serializers.ValidationError("Squad not found.")
+
+        # Check if squad is public or if user is the owner
+        if not squad.is_public and squad.owner != self.context['request'].user:
             raise serializers.ValidationError("Squad not found or not public.")
 
         # Check if user is already a member

@@ -7,8 +7,8 @@ const BottomNav = () => {
 
   const navItems = [
     { path: '/', icon: Home, label: 'Dashboard' },
-    { path: '/squad', icon: Users, label: 'Squad' },
-    { path: '/centers', icon: MapPin, label: 'Centers' },
+    { path: '/squad', icon: Users, label: 'Squads' },
+    { path: '/find-centers', icon: MapPin, label: 'Centers' },
     { path: '/leaderboard', icon: Trophy, label: 'Leaderboard' },
   ];
 

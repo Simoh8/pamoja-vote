@@ -35,7 +35,23 @@ class SquadViewSet(viewsets.ModelViewSet):
     def join(self, request, pk=None):
         """Join a squad"""
         squad = self.get_object()
-        serializer = SquadJoinSerializer(data=request.data, context={'request': request})
+
+        # Check if user is already a member of another squad (but allow joining their own squad)
+        existing_membership = SquadMember.objects.filter(user=request.user).first()
+        if existing_membership and existing_membership.squad != squad:
+            return Response(
+                {'error': f'You are already a member of "{existing_membership.squad.name}". Leave that squad first to join another.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # If user is the owner, they don't need to join - they're already the leader
+        if squad.owner == request.user:
+            return Response(
+                {'error': 'You are the owner of this squad and cannot join it as a member.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        serializer = SquadJoinSerializer(data={'squad_id': pk}, context={'request': request})
         serializer.is_valid(raise_exception=True)
 
         # Override squad_id with the URL parameter
@@ -69,6 +85,27 @@ class SquadViewSet(viewsets.ModelViewSet):
                 {'error': 'You are not a member of this squad'},
                 status=status.HTTP_400_BAD_REQUEST
             )
+
+    @action(detail=False, methods=['get'])
+    def my_squads(self, request):
+        """Get squads the current user is a member of"""
+        user = request.user
+        memberships = SquadMember.objects.filter(user=user).select_related('squad')
+        squads = [membership.squad for membership in memberships]
+
+        serializer = SquadSerializer(squads, many=True)
+        return Response(serializer.data)
+
+    @action(detail=False, methods=['get'])
+    def my_membership(self, request):
+        """Get current user's squad membership"""
+        user = request.user
+        membership = SquadMember.objects.filter(user=user).select_related('squad').first()
+
+        if membership:
+            serializer = SquadMemberSerializer(membership)
+            return Response(serializer.data)
+        return Response({'message': 'Not a member of any squad'})
 
     @action(detail=False, methods=['get'])
     def leaderboard(self, request):
@@ -119,8 +156,24 @@ class SquadMemberViewSet(viewsets.ModelViewSet):
         membership.role = new_role
         membership.save()
 
+    @action(detail=True, methods=['patch'])
+    def update_registration_status(self, request, pk=None):
+        """Update registration status for a squad member"""
+        membership = self.get_object()
+
+        # Only allow members to update their own registration status
+        if membership.user != request.user:
+            return Response(
+                {'error': 'You can only update your own registration status'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        has_registered = request.data.get('has_registered', False)
+        membership.has_registered = has_registered
+        membership.save()
+
         return Response({
-            'message': f'Role changed to {new_role}',
+            'message': 'Registration status updated successfully',
             'membership': SquadMemberSerializer(membership).data
         })
 

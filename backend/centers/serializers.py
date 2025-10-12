@@ -8,8 +8,8 @@ class CenterSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Center
-        fields = ('id', 'name', 'county', 'address', 'lat', 'lng',
-                 'opening_hours', 'distance')
+        fields = ('id', 'name', 'county', 'constituency', 'ward', 'polling_station_name',
+                 'address', 'lat', 'lng', 'opening_hours', 'distance')
 
     def get_distance(self, obj):
         """Calculate distance from user's location (if provided)"""
@@ -26,7 +26,8 @@ class CenterCreateSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Center
-        fields = ('name', 'county', 'address', 'lat', 'lng', 'opening_hours')
+        fields = ('name', 'county', 'constituency', 'ward', 'polling_station_name',
+                 'address', 'lat', 'lng', 'opening_hours')
 
     def create(self, validated_data):
         # In production, you might want to geocode the address
