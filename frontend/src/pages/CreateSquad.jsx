@@ -1,8 +1,8 @@
-import { useState } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
-import { Users, Plus, ArrowLeft, MapPin } from 'lucide-react';
+import { Users, Plus, ArrowLeft, MapPin, Search, ChevronDown } from 'lucide-react';
 import { squadAPI, centerAPI } from '../api';
 import { Button, Input, Card, Alert } from '../components/ui';
 
@@ -17,25 +17,79 @@ const CreateSquad = () => {
     registration_center: '',
   });
   const [error, setError] = useState('');
+  const [showCenterDropdown, setShowCenterDropdown] = useState(false);
+  const [centerSearchTerm, setCenterSearchTerm] = useState('');
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const dropdownRef = useRef(null);
 
-  // Fetch centers for selection with proper error handling
-  const { 
-    data: centersResponse, 
-    isLoading: centersLoading, 
-    error: centersError 
-  } = useQuery({
-    queryKey: ['centers'],
-    queryFn: () => centerAPI.getCenters(),
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setShowCenterDropdown(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  // Fetch polling stations data which contains registration centers
+  const { data: pollingStations = { features: [] }, isLoading: centersLoading, error: centersError } = useQuery({
+    queryKey: ['polling-stations'],
+    queryFn: async () => {
+      const response = await fetch('/polling_stations.geojson');
+      if (!response.ok) {
+        throw new Error('Failed to load polling stations data');
+      }
+      return await response.json();
+    },
+    retry: 3,
+    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
+    cacheTime: 10 * 60 * 1000, // Keep in cache for 10 minutes
   });
 
-  // Safely extract centers array from response
-  const centers = 
-    Array.isArray(centersResponse) ? centersResponse :
-    centersResponse?.centers ? centersResponse.centers :
-    centersResponse?.data ? centersResponse.data :
-    [];
+  // Transform polling stations to registration centers format
+  const transformToCenters = (stations) => {
+    return stations.features
+      .filter(feature =>
+        feature.geometry &&
+        feature.geometry.coordinates &&
+        feature.properties?.name &&
+        feature.geometry.coordinates[0] !== 0.0 &&
+        feature.geometry.coordinates[1] !== 0.0
+      )
+      .map((feature, index) => ({
+        id: `center-${index}`,
+        name: feature.properties.name,
+        location: feature.properties.ward || 'Unknown Location',
+        county: feature.properties.county,
+        constituency: feature.properties.constituen,
+        latitude: feature.geometry.coordinates[1],
+        longitude: feature.geometry.coordinates[0],
+        phone: null,
+        hours: null,
+        description: `Registration center in ${feature.properties.ward || 'Unknown'}, ${feature.properties.county}`,
+      }));
+  };
+
+  const centers = transformToCenters(pollingStations);
+
+  // Filter centers based on search term
+  const filteredCenters = useMemo(() => {
+    if (!centerSearchTerm.trim()) return centers;
+
+    const searchTerm = centerSearchTerm.toLowerCase().trim();
+    return centers.filter(center =>
+      center.name.toLowerCase().includes(searchTerm) ||
+      center.location.toLowerCase().includes(searchTerm) ||
+      center.county.toLowerCase().includes(searchTerm) ||
+      center.constituency.toLowerCase().includes(searchTerm)
+    );
+  }, [centers, centerSearchTerm]);
 
   const createSquadMutation = useMutation({
     mutationFn: (data) => squadAPI.createSquad(data),
@@ -90,6 +144,14 @@ const CreateSquad = () => {
     'Samburu', 'Siaya', 'Taita-Taveta', 'Tana River', 'Tharaka-Nithi',
     'Trans Nzoia', 'Turkana', 'Uasin Gishu', 'Vihiga', 'Wajir', 'West Pokot'
   ];
+
+  const handleCenterSelect = (center) => {
+    setFormData(prev => ({ ...prev, registration_center: center.id }));
+    setCenterSearchTerm(center.name);
+    setShowCenterDropdown(false);
+  };
+
+  const selectedCenter = centers.find(center => center.id === formData.registration_center);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 p-4">
@@ -177,34 +239,75 @@ const CreateSquad = () => {
                 <label htmlFor="registration_center" className="block text-sm font-medium text-gray-700 mb-2">
                   Registration Center (Optional)
                 </label>
-                <select
-                  id="registration_center"
-                  value={formData.registration_center}
-                  onChange={(e) => handleChange('registration_center', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  disabled={centersLoading || centersError}
-                >
-                  <option value="">
-                    {centersError 
-                      ? 'Unable to load centers' 
-                      : centersLoading 
-                        ? 'Loading centers...' 
-                        : 'Select a registration center (optional)'
-                    }
-                  </option>
-                  {Array.isArray(centers) && centers.length > 0 ? (
-                    centers.map(center => (
-                      <option key={center.id} value={center.id}>
-                        {center.name} - {center.location || center.address}, {center.county}
-                        {center.constituency && ` (${center.constituency})`}
-                      </option>
-                    ))
-                  ) : (
-                    !centersLoading && !centersError && (
-                      <option value="" disabled>No centers available</option>
-                    )
+
+                {/* Autocomplete input for centers */}
+                <div className="relative" ref={dropdownRef}>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={centerSearchTerm}
+                      onChange={(e) => {
+                        setCenterSearchTerm(e.target.value);
+                        setShowCenterDropdown(true);
+                      }}
+                      onFocus={() => setShowCenterDropdown(true)}
+                      placeholder="Search and select a registration center..."
+                      className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      disabled={centersLoading || centersError}
+                    />
+                    <div className="absolute inset-y-0 right-0 flex items-center pr-2">
+                      <ChevronDown className="h-4 w-4 text-gray-400" />
+                    </div>
+                  </div>
+
+                  {/* Dropdown with filtered results */}
+                  {showCenterDropdown && (
+                    <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                      {centersLoading ? (
+                        <div className="px-3 py-2 text-sm text-gray-500">Loading centers...</div>
+                      ) : filteredCenters.length === 0 ? (
+                        <div className="px-3 py-2 text-sm text-gray-500">
+                          {centerSearchTerm ? 'No centers found' : 'Start typing to search centers...'}
+                        </div>
+                      ) : (
+                        filteredCenters.slice(0, 10).map(center => (
+                          <button
+                            key={center.id}
+                            type="button"
+                            onClick={() => handleCenterSelect(center)}
+                            className="w-full text-left px-3 py-2 hover:bg-gray-50 text-sm border-b border-gray-100 last:border-b-0"
+                          >
+                            <div className="font-medium text-gray-900">{center.name}</div>
+                            <div className="text-xs text-gray-500">
+                              {center.location}, {center.county}
+                              {center.constituency && ` • ${center.constituency}`}
+                            </div>
+                          </button>
+                        ))
+                      )}
+                      {filteredCenters.length > 10 && (
+                        <div className="px-3 py-2 text-xs text-gray-500 border-t border-gray-100">
+                          Showing first 10 results. Type more to filter further.
+                        </div>
+                      )}
+                    </div>
                   )}
-                </select>
+
+                  {/* Selected center display */}
+                  {selectedCenter && (
+                    <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                      <div className="flex items-center text-sm">
+                        <MapPin className="h-4 w-4 text-blue-600 mr-2" />
+                        <span className="font-medium text-gray-900">{selectedCenter.name}</span>
+                      </div>
+                      <div className="text-xs text-gray-600 mt-1">
+                        {selectedCenter.location}, {selectedCenter.county}
+                        {selectedCenter.constituency && ` • ${selectedCenter.constituency}`}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
                 <p className="text-xs text-gray-500 mt-1">
                   Associate your squad with a specific registration center that includes County, Constituency, Ward, and Polling Station information to make it a complete squad.
                 </p>
