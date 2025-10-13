@@ -100,10 +100,18 @@ class ApiClient {
 
   transformError(error) {
     if (error.response) {
+      // Handle DRF validation errors in non_field_errors format
+      const data = error.response.data || {};
+
       return {
-        message: error.response.data?.message || 'An error occurred',
+        message: data.non_field_errors?.[0] ||
+                data.detail ||
+                data.message ||
+                data.error ||
+                'An error occurred',
         status: error.response.status,
-        errors: error.response.data?.errors,
+        errors: data.errors || data,
+        response: error.response,
       };
     }
 
@@ -111,12 +119,14 @@ class ApiClient {
       return {
         message: 'Network error - please check your connection',
         status: 0,
+        response: error.response,
       };
     }
 
     return {
       message: error.message || 'Unknown error occurred',
       status: 0,
+      response: error.response,
     };
   }
 
