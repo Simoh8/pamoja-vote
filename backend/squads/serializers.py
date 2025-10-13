@@ -122,17 +122,19 @@ class SquadCreateSerializer(serializers.ModelSerializer):
                 for squad in existing_squads:
                     print(f"DEBUG: Existing squad: {squad.name}, remaining slots: {squad.remaining_slots}")
                     if squad.remaining_slots is None or squad.remaining_slots > 0:
+                        # Get center information for the error message
                         try:
                             center = Center.objects.get(id=center_id)
-                            raise serializers.ValidationError(
-                                f'A squad "{squad.name}" already exists for {center.name} on {voter_registration_date} '
-                                f'with available slots. Please join "{squad.name}" instead of creating a new squad.'
-                            )
+                            center_name = center.name
                         except Center.DoesNotExist:
-                            raise serializers.ValidationError(
-                                f'A squad "{squad.name}" already exists for this registration center on {voter_registration_date} '
+                            center_name = "Unknown Center"
+                        
+                        raise serializers.ValidationError({
+                            'non_field_errors': [
+                                f'A squad "{squad.name}" already exists for {center_name} on {voter_registration_date} '
                                 f'with available slots. Please join "{squad.name}" instead of creating a new squad.'
-                            )
+                            ]
+                        })
             else:
                 print("DEBUG: No center ID found for validation")
         

@@ -146,6 +146,8 @@ const CreateSquad = () => {
       console.error("Error status:", err?.status);
       console.error("Error message:", err?.message);
       console.error("Error response:", err?.response);
+      console.error("Error response data:", err?.response?.data);
+      console.error("Error response status:", err?.response?.status);
       
       // Robust error handling for different error structures
       const status = err?.status || err?.response?.status;
@@ -164,6 +166,8 @@ const CreateSquad = () => {
           errorData?.error ||
           err?.message ||
           "A squad with similar details already exists";
+
+        console.log("Extracted error text:", errorText);
 
         // Check for existing squad pattern in any error text
         const existingSquadMatch = errorText.match(/Please join "([^"]+)"/);
