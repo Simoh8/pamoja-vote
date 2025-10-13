@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Users, MapPin, Calendar, UserPlus } from 'lucide-react';
+import { Users, MapPin, Calendar, UserPlus, Clock, Star } from 'lucide-react';
 import { Button } from './ui';
 import Card from './Card';
 
@@ -13,6 +13,44 @@ const SquadCard = ({
   className = ""
 }) => {
   const isUserMember = isCurrentUserSquad;
+
+  // Check if registration date is in the future
+  const isRegistrationFuture = squad.voter_registration_date
+    ? new Date(squad.voter_registration_date) > new Date()
+    : false;
+
+  // Check if user can join (not a member of this squad AND registration date is not in future)
+  const canJoinSquad = !isUserMember && !isRegistrationFuture;
+
+  // Button text and state logic
+  const getButtonContent = () => {
+    if (isUserMember) {
+      return {
+        text: "Already a Member",
+        variant: "secondary",
+        icon: Users,
+        disabled: false
+      };
+    }
+
+    if (isRegistrationFuture) {
+      return {
+        text: "Registration Pending",
+        variant: "outline",
+        icon: Clock,
+        disabled: true
+      };
+    }
+
+    return {
+      text: "Join Squad",
+      variant: "default",
+      icon: UserPlus,
+      disabled: false
+    };
+  };
+
+  const buttonContent = getButtonContent();
 
   return (
     <motion.div
@@ -38,8 +76,9 @@ const SquadCard = ({
               </div>
             </div>
             {isUserMember && (
-              <div className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-medium">
-                Your Squad
+              <div className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white px-3 py-2 rounded-full text-xs font-bold shadow-lg border-2 border-white flex items-center space-x-1.5 animate-pulse">
+                <Star className="w-3 h-3 fill-current" />
+                <span>You're a Member</span>
               </div>
             )}
           </div>
@@ -80,13 +119,18 @@ const SquadCard = ({
           </div>
 
           {squad.voter_registration_date && (
-            <div className="mb-3 p-2 bg-green-50 rounded-lg">
+            <div className={`mb-3 p-2 rounded-lg ${isRegistrationFuture ? 'bg-orange-50' : 'bg-green-50'}`}>
               <div className="flex items-center text-sm text-green-800">
                 <Calendar className="h-4 w-4 mr-2" />
                 <span className="font-medium">Registration Date:</span>
               </div>
               <div className="text-sm text-green-700 ml-6">
                 {new Date(squad.voter_registration_date).toLocaleDateString()}
+                {isRegistrationFuture && (
+                  <span className="ml-2 text-xs text-orange-600 font-medium">
+                    (Upcoming)
+                  </span>
+                )}
               </div>
             </div>
           )}
@@ -97,22 +141,20 @@ const SquadCard = ({
             <Button
               onClick={() => isUserMember ? onLeave(squad.id) : onJoin(squad.id)}
               loading={isJoining}
-              disabled={isJoining}
+              disabled={isJoining || buttonContent.disabled}
               className="w-full"
-              variant={isUserMember ? "secondary" : "default"}
+              variant={buttonContent.variant}
             >
-              {isUserMember ? (
-                <>
-                  <Users className="h-4 w-4 mr-2" />
-                  Already a Member
-                </>
-              ) : (
-                <>
-                  <UserPlus className="h-4 w-4 mr-2" />
-                  Join Squad
-                </>
-              )}
+              <buttonContent.icon className="h-4 w-4 mr-2" />
+              {buttonContent.text}
             </Button>
+
+            {/* Show reason why button is disabled */}
+            {buttonContent.disabled && !isUserMember && isRegistrationFuture && (
+              <p className="text-xs text-orange-600 mt-2 text-center">
+                Registration date is in the future
+              </p>
+            )}
           </div>
         )}
       </Card>
