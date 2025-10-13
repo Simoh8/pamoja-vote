@@ -3,6 +3,8 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { AuthProvider } from './context/AuthContext';
 import { AnimatePresence } from 'framer-motion';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 // Pages
 import Login from './pages/Login';
@@ -168,6 +170,23 @@ function App() {
 
             {/* Bottom navigation for mobile */}
             <BottomNav />
+
+            {/* Toast Container */}
+            <ToastContainer
+              position="top-right"
+              autoClose={5000}
+              hideProgressBar={false}
+              newestOnTop={false}
+              closeOnClick
+              rtl={false}
+              pauseOnFocusLoss
+              draggable
+              pauseOnHover
+              theme="light"
+              style={{
+                zIndex: 9999,
+              }}
+            />
           </div>
         </Router>
 
