@@ -54,7 +54,13 @@ class SquadCreateSerializer(serializers.ModelSerializer):
         }
     
     def validate(self, data):
-        """Validate the squad data"""
+        """
+        Validate the squad data and check for existing squads with the same registration center and date.
+        """
+        # First call the parent's validate method (which includes basic field validation)
+        data = super().validate(data)
+        
+        # Validate required fields
         required_fields = ['name', 'county', 'voter_registration_date']
         for field in required_fields:
             if not data.get(field):
@@ -62,7 +68,78 @@ class SquadCreateSerializer(serializers.ModelSerializer):
                 
         if 'max_members' in data and data['max_members'] is not None and data['max_members'] <= 0:
             raise serializers.ValidationError({"max_members": "Must be a positive number."})
+        
+        # Get registration center data and voter registration date
+        registration_center_data = data.get('registration_center')
+        voter_registration_date = data.get('voter_registration_date')
+        
+        if registration_center_data and voter_registration_date:
+            from .models import Squad
+            from centers.models import Center
             
+            print(f"DEBUG: Validating squad creation - center data: {registration_center_data}, date: {voter_registration_date}")
+            
+            # Handle different formats of registration center data
+            center_id = None
+            
+            if isinstance(registration_center_data, str):
+                # If it's a UUID string, use it directly
+                try:
+                    center_id = registration_center_data
+                    print(f"DEBUG: Using center ID from string: {center_id}")
+                except (ValueError, TypeError):
+                    center_id = None
+                    
+            elif isinstance(registration_center_data, dict):
+                # If it's a dictionary, try to find or create the center first
+                center_name = registration_center_data.get('name')
+                county = registration_center_data.get('county')
+                
+                if center_name and county:
+                    # Try to find existing center
+                    center = Center.objects.filter(
+                        name__iexact=center_name,
+                        county__iexact=county
+                    ).first()
+                    
+                    if center:
+                        center_id = str(center.id)
+                        print(f"DEBUG: Found existing center: {center.name} (ID: {center_id})")
+                    else:
+                        # For validation purposes, we can't create the center here
+                        # but we need to check if a similar center exists
+                        print(f"DEBUG: Center not found, will create during squad creation")
+            
+            # Check for existing squads with the same center and date
+            if center_id:
+                print(f"DEBUG: Checking for existing squads with center ID: {center_id}")
+                existing_squads = Squad.objects.filter(
+                    registration_center_id=center_id,
+                    voter_registration_date=voter_registration_date
+                )
+                
+                print(f"DEBUG: Found {existing_squads.count()} existing squads")
+                for squad in existing_squads:
+                    print(f"DEBUG: Existing squad: {squad.name}, remaining slots: {squad.remaining_slots}")
+                    if squad.remaining_slots is None or squad.remaining_slots > 0:
+                        try:
+                            center = Center.objects.get(id=center_id)
+                            raise serializers.ValidationError({
+                                'registration_center': (
+                                    f'A squad already exists for {center.name} on {voter_registration_date} '
+                                    f'with available slots. Please join the existing squad instead.'
+                                )
+                            })
+                        except Center.DoesNotExist:
+                            raise serializers.ValidationError({
+                                'registration_center': (
+                                    f'A squad already exists for this registration center on {voter_registration_date} '
+                                    f'with available slots. Please join the existing squad instead.'
+                                )
+                            })
+            else:
+                print("DEBUG: No center ID found for validation")
+        
         return data
         
     def validate_registration_center(self, value):
