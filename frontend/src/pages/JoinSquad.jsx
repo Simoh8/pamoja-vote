@@ -291,10 +291,9 @@ const JoinSquad = () => {
                       <div className="flex items-center justify-between text-sm text-gray-500 mb-4">
                         <span>{squad.member_count || 0} members</span>
                         <span>
-                          {squad.goal_count 
-                            ? `${squad.remaining_slots || 0} slots remaining`
-                            : 'No limit'
-                          }
+                          {squad.max_members !== null && squad.max_members > 0
+                            ? `${squad.remaining_slots} of ${squad.max_members} slots left`
+                            : ''}
                         </span>
                       </div>
 

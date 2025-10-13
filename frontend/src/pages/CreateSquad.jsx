@@ -94,7 +94,6 @@ const CreateSquad = () => {
   const createSquadMutation = useMutation({
     mutationFn: (data) => squadAPI.createSquad(data),
     onSuccess: (data) => {
-      console.log('Squad created successfully:', data);
       setError('');
       // Invalidate squads queries to refresh the data
       queryClient.invalidateQueries({ queryKey: ['user-squads'] });
@@ -103,29 +102,42 @@ const CreateSquad = () => {
       navigate('/squad');
     },
     onError: (error) => {
-      console.error('Squad creation failed:', error);
       setError(error.response?.data?.message || 'Failed to create squad');
     },
   });
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!formData.name.trim() || !formData.description.trim() || !formData.county.trim() || !formData.voter_registration_date.trim()) {
+    if (!formData.name.trim() || !formData.description.trim() || !formData.voter_registration_date.trim()) {
       setError('Please fill in all required fields');
+      return;
+    }
+
+    // Get county from selected center, or from manual selection
+    const county = selectedCenter?.county || formData.county?.trim();
+    if (!county) {
+      setError('Please select a registration center or specify a county');
       return;
     }
 
     const submitData = {
       name: formData.name.trim(),
       description: formData.description.trim(),
-      county: formData.county.trim(),
-      goal_count: formData.goal_count ? parseInt(formData.goal_count) : 0,
+      county: county,
+      max_members: formData.goal_count ? parseInt(formData.goal_count) : null,
       is_public: formData.is_public,
-      voter_registration_date: formData.voter_registration_date || null,
-      ...(formData.registration_center && formData.registration_center !== '' && { registration_center: formData.registration_center }),
+      voter_registration_date: formData.voter_registration_date,
+      ...(formData.registration_center && formData.registration_center !== '' && {
+        registration_center: {
+          id: formData.registration_center,
+          name: selectedCenter?.name,
+          county: selectedCenter?.county,
+          constituency: selectedCenter?.constituency,
+          ward: selectedCenter?.location,
+        }
+      }),
     };
 
-    console.log('Submitting squad data:', submitData);
     createSquadMutation.mutate(submitData);
   };
 
@@ -146,7 +158,11 @@ const CreateSquad = () => {
   ];
 
   const handleCenterSelect = (center) => {
-    setFormData(prev => ({ ...prev, registration_center: center.id }));
+    setFormData(prev => ({
+      ...prev,
+      registration_center: center.id,
+      county: center.county // Auto-populate county when center is selected
+    }));
     setCenterSearchTerm(center.name);
     setShowCenterDropdown(false);
   };
@@ -306,12 +322,42 @@ const CreateSquad = () => {
                       </div>
                     </div>
                   )}
+
+                  {/* Show selected county if center is selected */}
+                  {selectedCenter && formData.county && (
+                    <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded-lg">
+                      <div className="text-xs text-green-700">
+                        County: <span className="font-medium">{formData.county}</span> (auto-selected from registration center)
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <p className="text-xs text-gray-500 mt-1">
                   Associate your squad with a specific registration center that includes County, Constituency, Ward, and Polling Station information to make it a complete squad.
                 </p>
               </div>
+
+              {/* Manual county selection (fallback if no registration center selected) */}
+              {!selectedCenter && (
+                <div>
+                  <label htmlFor="county" className="block text-sm font-medium text-gray-700 mb-2">
+                    County *
+                  </label>
+                  <select
+                    id="county"
+                    value={formData.county}
+                    onChange={(e) => handleChange('county', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    required={!selectedCenter}
+                  >
+                    <option value="">Select your county</option>
+                    {kenyaCounties.map(county => (
+                      <option key={county} value={county}>{county}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
 
               <div>
                 <Input
