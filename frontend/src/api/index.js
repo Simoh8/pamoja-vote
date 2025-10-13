@@ -242,8 +242,8 @@ export const centerAPI = {
     apiClient.get('/centers/', params),
 
   // Get nearby centers (requires geolocation)
-  getNearbyCenters: () =>
-    apiClient.get('/centers/nearby/'),
+  // getNearbyCenters: () =>
+  //   apiClient.get('/centers/nearby/'),
 
   // Get specific center
   getCenter: (id) =>

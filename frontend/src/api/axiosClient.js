@@ -113,8 +113,6 @@ export const centerAPI = {
   getCenters: (params = {}) =>
     apiClient.get('/centers/', { params }),
 
-  getNearbyCenters: () =>
-    apiClient.get('/centers/nearby/'),
 
   getCenter: (id) =>
     apiClient.get(`/centers/${id}/`),
