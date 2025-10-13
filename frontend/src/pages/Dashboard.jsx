@@ -7,6 +7,7 @@ import { useAuth } from '../context/AuthContext';
 import { squadAPI, centerAPI } from '../api';
 import { Button } from '../components/ui';
 import Card from '../components/Card';
+import SquadCard from '../components/SquadCard';
 
 const Dashboard = () => {
   const { user } = useAuth();
@@ -56,7 +57,7 @@ const Dashboard = () => {
     },
   });
 
-  const userSquads = Array.isArray(squads) ? squads : 
+  const userSquads = Array.isArray(squads) ? squads :
                    squads?.results ? squads.results : [];
   const nearbyCenters = centers || [];
 
@@ -132,41 +133,16 @@ const Dashboard = () => {
           <h2 className="text-xl font-bold text-gray-900 mb-4">
             {hasJoinedSquad ? 'Your Squad' : 'Available Squads'}
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {userSquads.map((squad) => (
-              <Card key={squad.id} className="p-4">
-                <div className="flex justify-between items-start mb-2">
-                  <h3 className="font-semibold text-gray-900">{squad.name}</h3>
-                  <span className={`px-2 py-1 text-xs rounded-full ${
-                    squad.is_public ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
-                  }`}>
-                    {squad.is_public ? 'Public' : 'Private'}
-                  </span>
-                </div>
-                <p className="text-sm text-gray-600 mb-3">{squad.description}</p>
-                <div className="flex justify-between items-center text-sm">
-                  <span className="text-gray-500">
-                    {squad.member_count || 0} members
-                  </span>
-                  <span className="text-gray-500">
-                    {squad.max_members !== null && squad.max_members > 0
-                      ? `${squad.remaining_slots} of ${squad.max_members} slots left`
-                      : 'No limit'}
-                  </span>
-                </div>
-
-                {squad.voter_registration_date && (
-                  <div className="mt-3 p-2 bg-green-50 rounded-lg">
-                    <div className="flex items-center text-sm text-green-800">
-                      <Calendar className="h-4 w-4 mr-2" />
-                      <span className="font-medium">Registration:</span>
-                    </div>
-                    <div className="text-sm text-green-700 ml-6">
-                      {new Date(squad.voter_registration_date).toLocaleDateString()}
-                    </div>
-                  </div>
-                )}
-              </Card>
+              <SquadCard
+                key={squad.id}
+                squad={squad}
+                isCurrentUserSquad={hasJoinedSquad && userMembership?.squad?.id === squad.id}
+                onJoin={() => {}}
+                onLeave={() => {}}
+                showJoinButton={false}
+              />
             ))}
           </div>
         </motion.div>
