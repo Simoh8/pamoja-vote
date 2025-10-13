@@ -5,13 +5,13 @@ from .models import Squad, SquadMember
 @admin.register(Squad)
 class SquadAdmin(admin.ModelAdmin):
     """Admin for Squad model"""
-    list_display = ('name', 'county', 'owner', 'goal_count', 'member_count', 'is_public', 'created_at')
+    list_display = ('name', 'county', 'owner', 'max_members', 'member_count', 'is_public', 'created_at')
     list_filter = ('county', 'is_public', 'created_at')
     search_fields = ('name', 'description', 'owner__phone_number')
     readonly_fields = ('created_at', 'member_count')
 
     fieldsets = (
-        (None, {'fields': ('name', 'description', 'county', 'goal_count', 'is_public', 'owner')}),
+        (None, {'fields': ('name', 'description', 'county', 'max_members', 'is_public', 'owner')}),
         ('Stats', {'fields': ('member_count', 'registration_progress')}),
         ('Timestamps', {'fields': ('created_at',)}),
     )

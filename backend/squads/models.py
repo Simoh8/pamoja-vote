@@ -10,7 +10,7 @@ class Squad(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=100)
     description = models.TextField(blank=True, null=True)
-    goal_count = models.PositiveIntegerField(help_text="Maximum number of members allowed in the squad", null=True, blank=True)
+    max_members = models.PositiveIntegerField(help_text="Maximum number of members allowed in the squad", null=True, blank=True)
     county = models.CharField(max_length=50)
     is_public = models.BooleanField(default=True)
     voter_registration_date = models.DateField(help_text="Date when squad members should register to vote")
@@ -39,9 +39,9 @@ class Squad(models.Model):
     @property
     def remaining_slots(self):
         """Calculate remaining slots available"""
-        if self.goal_count is None:
+        if self.max_members is None:
             return None  # Unlimited
-        return max(0, self.goal_count - self.member_count)
+        return max(0, self.max_members - self.member_count)
 
     @property
     def registration_progress(self):

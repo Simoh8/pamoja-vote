@@ -149,10 +149,9 @@ const Dashboard = () => {
                     {squad.member_count || 0} members
                   </span>
                   <span className="text-gray-500">
-                    {squad.goal_count 
-                      ? `${squad.remaining_slots || 0} slots left`
-                      : 'No limit'
-                    }
+                    {squad.max_members !== null && squad.max_members > 0
+                      ? `${squad.remaining_slots} of ${squad.max_members} slots left`
+                      : 'No limit'}
                   </span>
                 </div>
 
