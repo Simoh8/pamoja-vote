@@ -19,6 +19,7 @@ const JoinSquad = () => {
   // Refresh squads data when component mounts
   useEffect(() => {
     queryClient.invalidateQueries({ queryKey: ['squads'] });
+    queryClient.invalidateQueries({ queryKey: ['user-membership'] });
   }, [queryClient]);
 
   // Reset to first page when filters change
@@ -26,22 +27,30 @@ const JoinSquad = () => {
     setCurrentPage(1);
   }, [searchTerm, selectedCounty]);
 
-  // Check user's current membership
-  const { data: userMembership } = useQuery({
+  // Check user's current membership - ENABLED to properly detect user membership
+  const { data: userMembership, isLoading: membershipLoading } = useQuery({
     queryKey: ['user-membership'],
     queryFn: () => squadAPI.getMyMembership(),
+    enabled: true, // Enable this query to fetch actual membership data
+    retry: (failureCount, error) => {
+      // Don't retry on 404 (user not a member of any squad)
+      if (error?.response?.status === 404) {
+        return false;
+      }
+      return failureCount < 3;
+    },
   });
 
   const hasJoinedSquad = userMembership && userMembership.id;
 
-  // Query for squads with pagination
+  // Query for squads - show user's squads if they have any, or all squads if they don't
   const {
     data: squadsResponse,
     isLoading,
     error: squadsError,
     refetch
   } = useQuery({
-    queryKey: ['squads', selectedCounty, currentPage, searchTerm],
+    queryKey: hasJoinedSquad ? ['user-squads', selectedCounty, currentPage, searchTerm] : ['squads', selectedCounty, currentPage, searchTerm],
     queryFn: () => {
       const params = {
         page: currentPage,
@@ -49,17 +58,20 @@ const JoinSquad = () => {
         ...(selectedCounty && { county: selectedCounty }),
         ...(searchTerm && { search: searchTerm }),
       };
-      return squadAPI.getSquads(params);
+      return hasJoinedSquad ? squadAPI.getMySquads() : squadAPI.getSquads(params);
     },
     keepPreviousData: true, // Keep previous data while loading new page
   });
 
   // Extract squads and pagination info from response
-  const squads = squadsResponse?.results || [];
-  const totalCount = squadsResponse?.count || 0;
-  const totalPages = Math.ceil(totalCount / pageSize);
-  const hasNextPage = squadsResponse?.next !== null;
-  const hasPreviousPage = squadsResponse?.previous !== null || currentPage > 1;
+  // Handle different response formats: getMySquads() vs getSquads()
+  const squads = hasJoinedSquad
+    ? (Array.isArray(squadsResponse) ? squadsResponse : [])
+    : (squadsResponse?.results || []);
+  const totalCount = hasJoinedSquad ? squads.length : (squadsResponse?.count || 0);
+  const totalPages = hasJoinedSquad ? 1 : Math.ceil(totalCount / pageSize); // My squads don't paginate
+  const hasNextPage = hasJoinedSquad ? false : (squadsResponse?.next !== null);
+  const hasPreviousPage = hasJoinedSquad ? false : (squadsResponse?.previous !== null || currentPage > 1);
 
   // Join squad mutation
   const joinSquadMutation = useMutation({
@@ -68,6 +80,7 @@ const JoinSquad = () => {
       setError('');
       refetch(); // Refresh squads list
       queryClient.invalidateQueries({ queryKey: ['user-membership'] }); // Refresh user membership
+      queryClient.invalidateQueries({ queryKey: ['squads'] }); // Refresh all squads
     },
     onError: (error) => {
       setError(error.response?.data?.message || 'Failed to join squad');
@@ -83,11 +96,23 @@ const JoinSquad = () => {
       setError('');
       queryClient.invalidateQueries({ queryKey: ['squads'] });
       queryClient.invalidateQueries({ queryKey: ['user-membership'] });
+      queryClient.invalidateQueries({ queryKey: ['user-squads'] });
+      refetch(); // Refresh current query
     },
     onError: (error) => {
       setError(error.response?.data?.message || 'Failed to leave squad');
     },
   });
+
+  // Check if user's current squad has future registration date
+  const userCurrentSquad = userMembership?.squad;
+  const userSquadData = squads.find(squad => squad.id === userCurrentSquad?.id);
+  const hasFutureRegistration = userSquadData?.voter_registration_date
+    ? new Date(userSquadData.voter_registration_date) > new Date()
+    : false;
+
+  // User cannot create squad if they're in an active squad with future registration
+  const canCreateSquad = !hasJoinedSquad || !hasFutureRegistration;
 
   const handleLeaveSquad = (squadId) => {
     if (confirm('Are you sure you want to leave this squad?')) {
@@ -127,8 +152,30 @@ const JoinSquad = () => {
           <div className="w-16 h-16 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
             <Users className="h-8 w-8 text-white" />
           </div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Join a Squad</h1>
-          <p className="text-gray-600">Team up with friends and make your voice count together</p>
+          <div className="flex items-center justify-center space-x-4 mb-4">
+            <h1 className="text-3xl font-bold text-gray-900">
+              {hasJoinedSquad ? 'The Squadz' : 'Join a Squad'}
+            </h1>
+            <Button
+              onClick={() => {
+                queryClient.invalidateQueries({ queryKey: ['user-membership'] });
+                queryClient.invalidateQueries({ queryKey: ['squads'] });
+                refetch();
+                setError('');
+              }}
+              variant="outline"
+              size="sm"
+              className="text-xs"
+            >
+              Refresh
+            </Button>
+          </div>
+          <p className="text-gray-600">
+            {hasJoinedSquad
+              ? 'Manage your squad and connect with fellow voters'
+              : 'Team up with friends and make your voice count together'
+            }
+          </p>
         </motion.div>
 
         {error && (
@@ -237,7 +284,7 @@ const JoinSquad = () => {
           animate={{ opacity: 1 }}
           transition={{ delay: 0.2 }}
         >
-          {isLoading ? (
+          {isLoading || membershipLoading ? (
             <div className="text-center py-12">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
               <p className="text-gray-600">Loading squads...</p>
@@ -272,24 +319,30 @@ const JoinSquad = () => {
                     <p className="text-gray-600 leading-relaxed">
                       {searchTerm || selectedCounty
                         ? 'Try adjusting your search or filter criteria to find more squads in your area.'
-                        : 'Be the leader your community needs. Create your own squad and start making a difference today!'}
+                        : hasJoinedSquad && hasFutureRegistration
+                          ? 'You\'re already part of an active squad. Wait for the registration date or leave your current squad to create a new one.'
+                          : 'Ready to make your voice heard? Join a squad and team up with friends to organize voter registration drives and awareness campaigns.'}
                     </p>
                   </div>
 
                   {/* Enhanced button */}
                   <div className="flex flex-col items-center">
-                    <Button
-                      onClick={() => navigate('/squad/create')}
-                      size="lg"
-                      className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-700 hover:via-indigo-700 hover:to-purple-700 text-white font-semibold px-8 py-3 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300"
-                    >
-                      <Plus className="h-5 w-5 mr-2" />
-                      Create Squad
-                    </Button>
+                    {canCreateSquad && (
+                      <Button
+                        onClick={() => navigate('/squad/create')}
+                        size="lg"
+                        className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-700 hover:via-indigo-700 hover:to-purple-700 text-white font-semibold px-8 py-3 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300"
+                      >
+                        <Plus className="h-5 w-5 mr-2" />
+                        Create Squad
+                      </Button>
+                    )}
 
                     {/* Subtle text below button */}
                     <p className="text-sm text-gray-500 mt-3">
-                      Join thousands of leaders making their voices heard
+                      {canCreateSquad
+                        ? 'Join thousands of leaders making their voices heard'
+                        : 'Focus on your current squad or wait for registration to complete'}
                     </p>
                   </div>
                 </div>
@@ -311,8 +364,8 @@ const JoinSquad = () => {
                 ))}
               </div>
 
-              {/* Pagination */}
-              {totalPages > 1 && (
+              {/* Pagination - only show when browsing all squads, not user's squads */}
+              {!hasJoinedSquad && totalPages > 1 && (
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -326,7 +379,7 @@ const JoinSquad = () => {
                   <div className="flex items-center space-x-2">
                     <Button
                       onClick={() => handlePageChange(currentPage - 1)}
-                      disabled={!hasPreviousPage || isLoading}
+                      disabled={!hasPreviousPage || isLoading || membershipLoading}
                       variant="outline"
                       size="sm"
                       className="flex items-center"
@@ -345,7 +398,7 @@ const JoinSquad = () => {
                             variant={pageNumber === currentPage ? "default" : "outline"}
                             size="sm"
                             className="w-10 h-10 p-0"
-                            disabled={isLoading}
+                            disabled={isLoading || membershipLoading}
                           >
                             {pageNumber}
                           </Button>
@@ -355,7 +408,7 @@ const JoinSquad = () => {
 
                     <Button
                       onClick={() => handlePageChange(currentPage + 1)}
-                      disabled={!hasNextPage || isLoading}
+                      disabled={!hasNextPage || isLoading || membershipLoading}
                       variant="outline"
                       size="sm"
                       className="flex items-center"

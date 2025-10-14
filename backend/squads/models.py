@@ -13,7 +13,12 @@ class Squad(models.Model):
     max_members = models.PositiveIntegerField(help_text="Maximum number of members allowed in the squad", null=True, blank=True)
     county = models.CharField(max_length=50)
     is_public = models.BooleanField(default=True)
-    voter_registration_date = models.DateField(help_text="Date when squad members should register to vote")
+    voter_registration_date = models.DateField(
+        help_text="Date when squad members should register to vote",
+        null=True,
+        blank=True,
+        default=None
+    )
     registration_center = models.ForeignKey(
         'centers.Center',
         on_delete=models.SET_NULL,

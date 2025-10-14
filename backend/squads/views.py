@@ -107,6 +107,16 @@ class SquadViewSet(viewsets.ModelViewSet):
             return Response(serializer.data)
         return Response({'message': 'Not a member of any squad'})
 
+    @action(detail=False, methods=['delete'])
+    def clear_membership(self, request):
+        """Clear user's squad membership (for debugging/testing)"""
+        user = request.user
+        deleted_count, _ = SquadMember.objects.filter(user=user).delete()
+        return Response({
+            'message': f'Cleared {deleted_count} membership(s)',
+            'user': str(user)
+        })
+
     @action(detail=False, methods=['get'])
     def leaderboard(self, request):
         """Get squad leaderboard by county"""
