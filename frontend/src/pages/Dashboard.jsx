@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import { useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Users, MapPin, Plus, Trophy, Calendar } from 'lucide-react';
@@ -17,6 +17,7 @@ const Dashboard = () => {
   // Refresh squads data when component mounts or user returns to dashboard
   useEffect(() => {
     queryClient.invalidateQueries({ queryKey: ['user-squads'] });
+    queryClient.invalidateQueries({ queryKey: ['user-membership'] });
   }, [queryClient]);
 
   const handleJoinSquad = () => {
@@ -31,20 +32,49 @@ const Dashboard = () => {
     navigate('/find-centers');
   };
 
-  // Check user's current membership
-  const { data: userMembership } = useQuery({
+  // Clear membership mutation (for debugging and user-initiated reset)
+  const clearMembershipMutation = useMutation({
+    mutationFn: () => squadAPI.clearMembership(),
+    onSuccess: (response) => {
+      console.log('Membership cleared successfully:', response);
+      // Invalidate all related queries to force fresh data fetch
+      queryClient.invalidateQueries({ queryKey: ['user-membership'] });
+      queryClient.invalidateQueries({ queryKey: ['squads'] });
+      queryClient.invalidateQueries({ queryKey: ['user-squads'] });
+      queryClient.invalidateQueries({ queryKey: ['my-membership'] });
+
+      // Force refetch the squads query immediately
+      queryClient.refetchQueries({ queryKey: ['squads'] });
+
+      alert(`Membership cleared! You can now join or create squads fresh.`);
+    },
+    onError: (error) => {
+      console.error('Failed to clear membership:', error);
+      alert('Failed to clear membership: ' + (error.response?.data?.message || error.message));
+    },
+  });
+
+  // Query for squads - always get all squads to determine user's membership from squad data
+  const { data: squads, isLoading: squadsLoading } = useQuery({
+    queryKey: ['squads'],
+    queryFn: () => squadAPI.getSquads(),
+  });
+
+  // Get user's membership info - ENABLED to properly detect user membership
+  const { data: userMembership, isLoading: membershipLoading } = useQuery({
     queryKey: ['user-membership'],
     queryFn: () => squadAPI.getMyMembership(),
+    enabled: true, // Enable this query to fetch actual membership data
+    retry: (failureCount, error) => {
+      // Don't retry on 404 (user not a member of any squad)
+      if (error?.response?.status === 404) {
+        return false;
+      }
+      return failureCount < 3;
+    },
   });
 
-  const hasJoinedSquad = userMembership && userMembership.id;
-
-  // Query for user's squads if they have any, or all squads if they don't
-  const { data: squads, isLoading: squadsLoading } = useQuery({
-    queryKey: hasJoinedSquad ? ['user-squads'] : ['squads'],
-    queryFn: hasJoinedSquad ? () => squadAPI.getMySquads() : () => squadAPI.getSquads(),
-  });
-
+  // Get nearby centers
   const { data: centers, isLoading: centersLoading, error: centersError } = useQuery({
     queryKey: ['nearby-centers'],
     queryFn: () => centerAPI.getNearbyCenters(),
@@ -59,7 +89,45 @@ const Dashboard = () => {
 
   const userSquads = Array.isArray(squads) ? squads :
                    squads?.results ? squads.results : [];
+
+  // Filter squads where the user is actually a member
+  // ONLY use actual membership data from the backend API
+  const userMemberSquads = userSquads.filter(squad => {
+    // Only consider a squad as user's if we have valid membership data
+    if (userMembership && userMembership.squad_id && userMembership.id) {
+      return squad.id === userMembership.squad_id;
+    }
+    // If no valid membership data, user is not a member of any squad
+    return false;
+  });
+
+  // Debug logging for membership detection
+  console.log('Dashboard Membership Debug:', {
+    userMembership: userMembership,
+    userMembershipSquadId: userMembership?.squad_id,
+    userMembershipId: userMembership?.id,
+    userSquadsLength: userSquads.length,
+    userMemberSquadsLength: userMemberSquads.length,
+    userMemberSquadIds: userMemberSquads.map(s => s.id),
+    allSquadMemberCounts: userSquads.map(s => ({ id: s.id, name: s.name, members: s.member_count }))
+  });
+
   const nearbyCenters = centers || [];
+
+  // Check if user has joined any squads from the filtered squad data
+  const hasJoinedSquad = userMemberSquads.length > 0;
+
+  // Get the first squad as the "current" squad for logic purposes
+  const userCurrentSquad = userMemberSquads.length > 0 ? userMemberSquads[0] : null;
+  const userMembershipRole = userMembership?.role || 'member';
+
+  // Check if user's current squad has future registration date
+  const hasFutureRegistration = userCurrentSquad?.voter_registration_date
+    ? new Date(userCurrentSquad.voter_registration_date) > new Date()
+    : false;
+
+  // User cannot create squad if they're in an active squad with future registration
+  const canCreateSquad = !hasJoinedSquad || !hasFutureRegistration;
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -76,6 +144,47 @@ const Dashboard = () => {
         <p className="text-gray-600">
           Ready to make your voice heard? Let's get registered together.
         </p>
+
+        {/* Membership Status Info */}
+        {hasJoinedSquad && (
+          <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="font-medium text-blue-900">Squad Membership Detected</h3>
+                <p className="text-sm text-blue-700 mt-1">
+                  You're currently a member of {userCurrentSquad?.name || 'a squad'}.
+                  {hasFutureRegistration && ' The registration date is in the future.'}
+                </p>
+                <p className="text-xs text-blue-600 mt-1">
+                  If you recently cleared your membership and still see this, try refreshing the page.
+                </p>
+              </div>
+              <div className="flex space-x-2">
+                <Button
+                  onClick={() => {
+                    queryClient.invalidateQueries({ queryKey: ['squads'] });
+                    queryClient.refetchQueries({ queryKey: ['squads'] });
+                    alert('Data refreshed! Check if your membership status updated.');
+                  }}
+                  variant="outline"
+                  size="sm"
+                  className="border-blue-300 text-blue-700 hover:bg-blue-50"
+                >
+                  Refresh Data
+                </Button>
+                <Button
+                  onClick={() => clearMembershipMutation.mutate()}
+                  variant="outline"
+                  size="sm"
+                  className="border-red-300 text-red-700 hover:bg-red-50"
+                  disabled={clearMembershipMutation.isPending}
+                >
+                  {clearMembershipMutation.isPending ? 'Clearing...' : 'Reset Membership'}
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
       </motion.div>
 
       {/* Quick Actions */}
@@ -85,6 +194,7 @@ const Dashboard = () => {
         transition={{ duration: 0.5, delay: 0.1 }}
         className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8"
       >
+        {/* Always show Join Squad card */}
         <Card className="p-6 hover:shadow-lg transition-shadow cursor-pointer" onClick={handleJoinSquad}>
           <div className="flex items-center">
             <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mr-4">
@@ -97,17 +207,19 @@ const Dashboard = () => {
           </div>
         </Card>
 
-        <Card className="p-6 hover:shadow-lg transition-shadow cursor-pointer" onClick={handleCreateSquad}>
-          <div className="flex items-center">
-            <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mr-4">
-              <Plus className="w-6 h-6 text-green-600" />
+        {canCreateSquad && (
+          <Card className="p-6 hover:shadow-lg transition-shadow cursor-pointer" onClick={handleCreateSquad}>
+            <div className="flex items-center">
+              <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mr-4">
+                <Plus className="w-6 h-6 text-green-600" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-gray-900">Create Squad</h3>
+                <p className="text-sm text-gray-600">Start your own group</p>
+              </div>
             </div>
-            <div>
-              <h3 className="font-semibold text-gray-900">Create Squad</h3>
-              <p className="text-sm text-gray-600">Start your own group</p>
-            </div>
-          </div>
-        </Card>
+          </Card>
+        )}
 
         <Card className="p-6 hover:shadow-lg transition-shadow cursor-pointer" onClick={handleFindCenters}>
           <div className="flex items-center">
@@ -123,7 +235,7 @@ const Dashboard = () => {
       </motion.div>
 
       {/* User's Squads */}
-      {userSquads.length > 0 && (
+      {userMemberSquads.length > 0 && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -134,14 +246,14 @@ const Dashboard = () => {
             {hasJoinedSquad ? 'Your Squad' : 'Available Squads'}
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {userSquads.map((squad) => (
+            {userMemberSquads.map((squad) => (
               <SquadCard
                 key={squad.id}
                 squad={squad}
-                isCurrentUserSquad={hasJoinedSquad && userMembership?.squad?.id === squad.id}
-                onJoin={() => {}}
+                isCurrentUserSquad={hasJoinedSquad && userCurrentSquad?.id === squad.id}
+                onJoin={() => navigate('/join-squad')}
                 onLeave={() => {}}
-                showJoinButton={false}
+                showJoinButton={true}
               />
             ))}
           </div>
@@ -207,14 +319,14 @@ const Dashboard = () => {
       )}
 
       {/* Loading States */}
-      {(squadsLoading || centersLoading) && (
+      {(squadsLoading || centersLoading || membershipLoading) && (
         <div className="flex justify-center py-8">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
         </div>
       )}
 
       {/* Empty States */}
-      {!squadsLoading && userSquads.length === 0 && (
+      {!squadsLoading && !membershipLoading && userMemberSquads.length === 0 && (
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -226,12 +338,14 @@ const Dashboard = () => {
           </h3>
           <p className="text-gray-600 mb-4">
             {hasJoinedSquad
-              ? 'You\'re not a member of any squads yet.'
+              ? hasFutureRegistration
+                ? 'You\'re already part of an active squad. Wait for the registration date or leave your current squad to create a new one.'
+                : 'You\'re not a member of any squads yet.'
               : 'Join a squad or create your own to start organizing with friends!'
             }
           </p>
-          <Button onClick={hasJoinedSquad ? handleJoinSquad : handleCreateSquad}>
-            {hasJoinedSquad ? 'Browse Squads' : 'Create Your First Squad'}
+          <Button onClick={canCreateSquad ? handleCreateSquad : handleJoinSquad}>
+            {canCreateSquad ? 'Create Squad' : 'Browse Squads'}
           </Button>
         </motion.div>
       )}

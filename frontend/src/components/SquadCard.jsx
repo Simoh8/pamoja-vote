@@ -12,24 +12,44 @@ const SquadCard = ({
   showJoinButton = true,
   className = ""
 }) => {
-  const isUserMember = isCurrentUserSquad;
+  // Safely check membership status
+  const isUserMember = Boolean(isCurrentUserSquad);
 
-  // Check if registration date is in the future
-  const isRegistrationFuture = squad.voter_registration_date
-    ? new Date(squad.voter_registration_date) > new Date()
+  // Debug logging for membership detection
+  console.log('SquadCard Debug:', {
+    squadId: squad?.id,
+    squadName: squad?.name,
+    isCurrentUserSquad,
+    isUserMember,
+    userSquadsLength: squad?.member_count,
+    userMemberSquadsLength: 'check-dashboard-logic'
+  });
+
+  // Safely check registration date
+  const registrationDate = squad?.voter_registration_date;
+  const isRegistrationFuture = registrationDate
+    ? (() => {
+        try {
+          return new Date(registrationDate) > new Date();
+        } catch (error) {
+          console.warn('Invalid registration date:', registrationDate, error);
+          return false;
+        }
+      })()
     : false;
 
-  // Check if user can join (not a member of this squad AND registration date is not in future)
-  const canJoinSquad = !isUserMember && !isRegistrationFuture;
+  // Check if user can join this specific squad
+  const canJoinThisSquad = !isUserMember && !isRegistrationFuture && showJoinButton;
 
-  // Button text and state logic
+  // Button content and state logic
   const getButtonContent = () => {
     if (isUserMember) {
       return {
         text: "Already a Member",
         variant: "secondary",
         icon: Users,
-        disabled: false
+        disabled: true,
+        onClick: undefined
       };
     }
 
@@ -38,7 +58,8 @@ const SquadCard = ({
         text: "Registration Pending",
         variant: "outline",
         icon: Clock,
-        disabled: true
+        disabled: true,
+        onClick: undefined
       };
     }
 
@@ -46,7 +67,8 @@ const SquadCard = ({
       text: "Join Squad",
       variant: "default",
       icon: UserPlus,
-      disabled: false
+      disabled: false,
+      onClick: () => onJoin(squad?.id)
     };
   };
 
@@ -76,8 +98,8 @@ const SquadCard = ({
               </div>
             </div>
             {isUserMember && (
-              <div className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white px-3 py-2 rounded-full text-xs font-bold shadow-lg border-2 border-white flex items-center space-x-1.5 animate-pulse">
-                <Star className="w-3 h-3 fill-current" />
+              <div className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white px-4 py-2.5 rounded-full text-sm font-bold shadow-xl border-2 border-white flex items-center space-x-2 animate-bounce">
+                <Star className="w-4 h-4 fill-current" />
                 <span>You're a Member</span>
               </div>
             )}
@@ -139,8 +161,8 @@ const SquadCard = ({
         {showJoinButton && (
           <div className="p-6 pt-0">
             <Button
-              onClick={() => isUserMember ? onLeave(squad.id) : onJoin(squad.id)}
-              loading={isJoining}
+              onClick={buttonContent.onClick}
+              loading={isJoining && canJoinThisSquad}
               disabled={isJoining || buttonContent.disabled}
               className="w-full"
               variant={buttonContent.variant}

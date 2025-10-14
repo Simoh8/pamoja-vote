@@ -229,11 +229,17 @@ export const squadAPI = {
   getMyMembership: () =>
     apiClient.get('/squads/my_membership/'),
 
-  // Update registration status
-  updateRegistrationStatus: (membershipId, hasRegistered) =>
-    apiClient.patch(`/members/${membershipId}/update_registration_status/`, {
-      has_registered: hasRegistered
-    }),
+  // Clear user's membership (for debugging)
+  clearMembership: () =>
+    apiClient.delete('/squads/clear_membership/'),
+
+  // Get squad members
+  getSquadMembers: (squadId) =>
+    apiClient.get(`/squads/${squadId}/members/`),
+
+  // Send message to squad members
+  sendSquadMessage: (squadId, data) =>
+    apiClient.post(`/squads/${squadId}/message/`, data),
 };
 
 export const centerAPI = {
