@@ -16,14 +16,17 @@ const SquadCard = ({
   const isUserMember = Boolean(isCurrentUserSquad);
 
   // Debug logging for membership detection
-  console.log('SquadCard Debug:', {
-    squadId: squad?.id,
-    squadName: squad?.name,
-    isCurrentUserSquad,
-    isUserMember,
-    userSquadsLength: squad?.member_count,
-    userMemberSquadsLength: 'check-dashboard-logic'
-  });
+  // console.log('SquadCard Debug:', {
+  //   squadId: squad?.id,
+  //   squadName: squad?.name,
+  //   isCurrentUserSquad,
+  //   isUserMember,
+  //   userSquadsLength: squad?.member_count,
+  //   canJoinThisSquad,
+  //   isRegistrationFuture,
+  //   showJoinButton,
+  //   componentLocation: 'Dashboard' // Add this to distinguish from JoinSquad
+  // });
 
   // Safely check registration date
   const registrationDate = squad?.voter_registration_date;
@@ -39,9 +42,21 @@ const SquadCard = ({
     : false;
 
   // Check if user can join this specific squad
-  const canJoinThisSquad = !isUserMember && !isRegistrationFuture && showJoinButton;
+  // Users can join squads even with future registration dates
+  const canJoinThisSquad = !isUserMember && showJoinButton;
 
-  // Button content and state logic
+  // Debug logging for button logic
+  console.log('SquadCard Button Logic Debug:', {
+    isUserMember,
+    isRegistrationFuture,
+    showJoinButton,
+    canJoinThisSquad,
+    registrationDate: squad?.voter_registration_date,
+    currentDate: new Date().toISOString(),
+    squadId: squad?.id,
+    squadName: squad?.name,
+    componentLocation: 'Dashboard'
+  });
   const getButtonContent = () => {
     if (isUserMember) {
       return {
@@ -55,11 +70,11 @@ const SquadCard = ({
 
     if (isRegistrationFuture) {
       return {
-        text: "Registration Pending",
+        text: "Join Squad (Registration Pending)",
         variant: "outline",
-        icon: Clock,
-        disabled: true,
-        onClick: undefined
+        icon: UserPlus,
+        disabled: false,
+        onClick: () => onJoin(squad?.id)
       };
     }
 
@@ -158,7 +173,7 @@ const SquadCard = ({
           )}
         </div>
 
-        {showJoinButton && (
+        {showJoinButton && !isUserMember && (
           <div className="p-6 pt-0">
             <Button
               onClick={buttonContent.onClick}
@@ -171,10 +186,10 @@ const SquadCard = ({
               {buttonContent.text}
             </Button>
 
-            {/* Show reason why button is disabled */}
-            {buttonContent.disabled && !isUserMember && isRegistrationFuture && (
+            {/* Show info about registration date for future registrations */}
+            {isRegistrationFuture && (
               <p className="text-xs text-orange-600 mt-2 text-center">
-                Registration date is in the future
+                Registration available from {new Date(squad?.voter_registration_date).toLocaleDateString()}
               </p>
             )}
           </div>
