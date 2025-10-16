@@ -14,20 +14,72 @@ const Squad = () => {
   const [messagingError, setMessagingError] = useState('');
 
   // Get user's current squad membership
-  const { data: userMembership, isLoading: membershipLoading } = useQuery({
+  const { data: userMembership, isLoading: membershipLoading, error: membershipError } = useQuery({
     queryKey: ['user-membership'],
     queryFn: () => squadAPI.getMyMembership(),
+  });
+
+  console.log('Squad.jsx - Membership Debug:', {
+    userMembership,
+    membershipLoading,
+    membershipError,
+    hasJoinedSquad: Boolean(userMembership && userMembership.id)
   });
 
   const hasJoinedSquad = userMembership && userMembership.id;
   const userSquad = userMembership?.squad;
   const isSquadCreator = userSquad?.owner === userMembership?.user;
 
+  // Since we don't have squad information in the membership response,
+  // redirect users with membership back to dashboard or join-squad page
+  if (hasJoinedSquad && !userSquad) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 p-4">
+        <div className="max-w-4xl mx-auto text-center">
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-8"
+          >
+            <div className="w-16 h-16 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
+              <Users className="h-8 w-8 text-white" />
+            </div>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">Squad Management</h1>
+            <p className="text-gray-600">You're a member of a squad</p>
+          </motion.div>
+
+          <Card className="p-8 bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200 max-w-2xl mx-auto">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Squad Information Unavailable</h3>
+            <p className="text-gray-600 mb-6">
+              We couldn't load your squad information. This might be a temporary issue.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Button onClick={() => navigate('/dashboard')} variant="outline">
+                Back to Dashboard
+              </Button>
+              <Button onClick={() => navigate('/join-squad')}>
+                Browse Squads
+              </Button>
+            </div>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
   // Get squad members if user has joined a squad
-  const { data: squadMembers, isLoading: membersLoading } = useQuery({
+  const { data: squadMembers, isLoading: membersLoading, error: membersError } = useQuery({
     queryKey: ['squad-members', userSquad?.id],
     queryFn: () => squadAPI.getSquadMembers(userSquad.id),
     enabled: hasJoinedSquad && !!userSquad?.id,
+  });
+
+  console.log('Squad.jsx - Members Debug:', {
+    userSquad,
+    squadMembers,
+    membersLoading,
+    membersError,
+    enabled: hasJoinedSquad && !!userSquad?.id
   });
 
   // Send message to squad members mutation
@@ -83,46 +135,65 @@ const Squad = () => {
             <p className="text-gray-600">Team up with friends and make your voice count together</p>
           </motion.div>
 
-          {/* Action Cards */}
-          <div className="grid gap-6 md:grid-cols-2 max-w-2xl mx-auto">
-            {/* Join Squad Card */}
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.1 }}
-            >
-              <Card className="p-6 text-center hover:shadow-lg transition-shadow cursor-pointer"
-                    onClick={handleJoinSquad}>
-                <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <UserPlus className="h-6 w-6 text-green-600" />
-                </div>
-                <h3 className="text-xl font-semibold text-gray-900 mb-2">Join a Squad</h3>
-                <p className="text-gray-600 mb-4">Team up with friends</p>
-                <Button variant="outline" className="w-full">
-                  Browse Squads <ArrowRight className="h-4 w-4 ml-2" />
-                </Button>
-              </Card>
-            </motion.div>
+          {/* Error State */}
+          {membershipError && (
+            <Alert
+              type="error"
+              message={`Error loading membership: ${membershipError.message}`}
+              className="mb-6"
+            />
+          )}
 
-            {/* Create Squad Card */}
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.2 }}
-            >
-              <Card className="p-6 text-center hover:shadow-lg transition-shadow cursor-pointer"
-                    onClick={handleCreateSquad}>
-                <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Plus className="h-6 w-6 text-blue-600" />
-                </div>
-                <h3 className="text-xl font-semibold text-gray-900 mb-2">Create Squad</h3>
-                <p className="text-gray-600 mb-4">Start your own group</p>
-                <Button className="w-full">
-                  Create Squad <ArrowRight className="h-4 w-4 ml-2" />
-                </Button>
-              </Card>
-            </motion.div>
-          </div>
+          {/* Loading State */}
+          {membershipLoading && (
+            <div className="text-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+              <p className="text-gray-600">Loading your squad information...</p>
+            </div>
+          )}
+
+          {/* Action Cards (only show if not loading and no error) */}
+          {!membershipLoading && !membershipError && (
+            <div className="grid gap-6 md:grid-cols-2 max-w-2xl mx-auto">
+              {/* Join Squad Card */}
+              <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.1 }}
+              >
+                <Card className="p-6 text-center hover:shadow-lg transition-shadow cursor-pointer"
+                      onClick={handleJoinSquad}>
+                  <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <UserPlus className="h-6 w-6 text-green-600" />
+                  </div>
+                  <h3 className="text-xl font-semibold text-gray-900 mb-2">Join a Squad</h3>
+                  <p className="text-gray-600 mb-4">Team up with friends</p>
+                  <Button variant="outline" className="w-full">
+                    Browse Squads <ArrowRight className="h-4 w-4 ml-2" />
+                  </Button>
+                </Card>
+              </motion.div>
+
+              {/* Create Squad Card */}
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.2 }}
+              >
+                <Card className="p-6 text-center hover:shadow-lg transition-shadow cursor-pointer"
+                      onClick={handleCreateSquad}>
+                  <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Plus className="h-6 w-6 text-blue-600" />
+                  </div>
+                  <h3 className="text-xl font-semibold text-gray-900 mb-2">Create Squad</h3>
+                  <p className="text-gray-600 mb-4">Start your own group</p>
+                  <Button className="w-full">
+                    Create Squad <ArrowRight className="h-4 w-4 ml-2" />
+                  </Button>
+                </Card>
+              </motion.div>
+            </div>
+          )}
 
           {/* Info Section */}
           <motion.div
@@ -237,183 +308,215 @@ const Squad = () => {
           </motion.div>
         )}
 
-        {/* Squad Details */}
-        <div className="grid gap-6 md:grid-cols-2">
-          {/* Squad Info */}
+        {/* Error State for Squad Loading */}
+        {membershipError && (
           <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.1 }}
-          >
-            <Card className="p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Squad Information</h3>
-
-              <div className="space-y-3">
-                <div>
-                  <label className="text-sm font-medium text-gray-700">Description</label>
-                  <p className="text-gray-600 mt-1">{userSquad?.description || 'No description available'}</p>
-                </div>
-
-                {userSquad?.max_members && (
-                  <div>
-                    <label className="text-sm font-medium text-gray-700">Capacity</label>
-                    <p className="text-gray-600 mt-1">
-                      {userSquad?.member_count || 0} of {userSquad?.max_members} members
-                    </p>
-                  </div>
-                )}
-
-                {userSquad?.voter_registration_date && (
-                  <div>
-                    <label className="text-sm font-medium text-gray-700">Registration Date</label>
-                    <p className="text-gray-600 mt-1">
-                      {new Date(userSquad?.voter_registration_date).toLocaleDateString()}
-                    </p>
-                  </div>
-                )}
-
-                <div>
-                  <label className="text-sm font-medium text-gray-700">Visibility</label>
-                  <p className="text-gray-600 mt-1">
-                    {userSquad?.is_public ? 'Public (anyone can join)' : 'Private (invite only)'}
-                  </p>
-                </div>
-              </div>
-            </Card>
-          </motion.div>
-
-          {/* Squad Members */}
-          <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.2 }}
-          >
-            <Card className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-gray-900">Squad Members</h3>
-                <span className="text-sm text-gray-500">
-                  {squadMembers?.length || 0} members
-                </span>
-              </div>
-
-              {membersLoading ? (
-                <div className="text-center py-4">
-                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mx-auto"></div>
-                </div>
-              ) : (
-                <div className="space-y-3 max-h-64 overflow-y-auto">
-                  {squadMembers?.map((member) => (
-                    <div key={member.id} className="flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-50">
-                      <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full flex items-center justify-center">
-                        <Users className="h-4 w-4 text-white" />
-                      </div>
-                      <div className="flex-1">
-                        <p className="text-sm font-medium text-gray-900">
-                          {member.user}
-                        </p>
-                        <p className="text-xs text-gray-500 capitalize">
-                          {member.role}
-                        </p>
-                      </div>
-                      <div className={`w-2 h-2 rounded-full ${
-                        member.has_registered ? 'bg-green-500' : 'bg-gray-300'
-                      }`} title={member.has_registered ? 'Registered' : 'Not registered'} />
-                    </div>
-                  ))}
-                </div>
-              )}
-            </Card>
-          </motion.div>
-        </div>
-
-        {/* Registration Center Info */}
-        {userSquad?.registration_center && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-            className="mt-6"
+            className="mb-6"
           >
-            <Card className="p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                <MapPin className="h-5 w-5 mr-2" />
-                Registration Center
-              </h3>
-
-              <div className="grid gap-4 md:grid-cols-2">
-                <div>
-                  <label className="text-sm font-medium text-gray-700">Name</label>
-                  <p className="text-gray-600 mt-1">{userSquad?.registration_center?.name || 'Not specified'}</p>
-                </div>
-
-                <div>
-                  <label className="text-sm font-medium text-gray-700">Location</label>
-                  <p className="text-gray-600 mt-1">
-                    {userSquad?.registration_center?.location || userSquad?.registration_center?.address || 'Not specified'}
-                  </p>
-                </div>
-
-                <div>
-                  <label className="text-sm font-medium text-gray-700">County</label>
-                  <p className="text-gray-600 mt-1">{userSquad?.registration_center?.county || 'Not specified'}</p>
-                </div>
-
-                {userSquad?.registration_center?.constituency && (
-                  <div>
-                    <label className="text-sm font-medium text-gray-700">Constituency</label>
-                    <p className="text-gray-600 mt-1">{userSquad?.registration_center?.constituency}</p>
-                  </div>
-                )}
-
-                {userSquad?.registration_center?.ward && (
-                  <div>
-                    <label className="text-sm font-medium text-gray-700">Ward</label>
-                    <p className="text-gray-600 mt-1">{userSquad?.registration_center?.ward}</p>
-                  </div>
-                )}
-
-                {userSquad?.registration_center?.polling_station_name && (
-                  <div>
-                    <label className="text-sm font-medium text-gray-700">Polling Station</label>
-                    <p className="text-green-600 mt-1 font-medium">{userSquad?.registration_center?.polling_station_name}</p>
-                  </div>
-                )}
-              </div>
-            </Card>
+            <Alert
+              type="error"
+              message={`Error loading squad: ${membershipError.message}`}
+              className="mb-4"
+            />
+            <div className="text-center">
+              <Button onClick={() => navigate('/dashboard')} variant="outline">
+                Back to Dashboard
+              </Button>
+            </div>
           </motion.div>
         )}
 
-        {/* Action Buttons */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4 }}
-          className="mt-6 flex justify-center space-x-4"
-        >
-          <Button
-            onClick={() => navigate('/dashboard')}
-            variant="outline"
-          >
-            Back to Dashboard
-          </Button>
+        {/* Loading State for Squad */}
+        {membershipLoading && (
+          <div className="text-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <p className="text-gray-600">Loading your squad information...</p>
+          </div>
+        )}
 
-          {isSquadCreator && (
-            <Button
-              onClick={() => setIsMessagingOpen(true)}
-              className="bg-blue-600 hover:bg-blue-700"
+        {/* Squad Details - Only show if no errors and not loading */}
+        {!membershipError && !membershipLoading && (
+          <>
+            <div className="grid gap-6 md:grid-cols-2">
+              {/* Squad Info */}
+              <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.1 }}
+              >
+                <Card className="p-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Squad Information</h3>
+
+                  <div className="space-y-3">
+                    <div>
+                      <label className="text-sm font-medium text-gray-700">Description</label>
+                      <p className="text-gray-600 mt-1">{userSquad?.description || 'No description available'}</p>
+                    </div>
+
+                    {userSquad?.max_members && (
+                      <div>
+                        <label className="text-sm font-medium text-gray-700">Capacity</label>
+                        <p className="text-gray-600 mt-1">
+                          {userSquad?.member_count || 0} of {userSquad?.max_members} members
+                        </p>
+                      </div>
+                    )}
+
+                    {userSquad?.voter_registration_date && (
+                      <div>
+                        <label className="text-sm font-medium text-gray-700">Registration Date</label>
+                        <p className="text-gray-600 mt-1">
+                          {new Date(userSquad?.voter_registration_date).toLocaleDateString()}
+                        </p>
+                      </div>
+                    )}
+
+                    <div>
+                      <label className="text-sm font-medium text-gray-700">Visibility</label>
+                      <p className="text-gray-600 mt-1">
+                        {userSquad?.is_public ? 'Public (anyone can join)' : 'Private (invite only)'}
+                      </p>
+                    </div>
+                  </div>
+                </Card>
+              </motion.div>
+
+              {/* Squad Members */}
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.2 }}
+              >
+                <Card className="p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold text-gray-900">Squad Members</h3>
+                    <span className="text-sm text-gray-500">
+                      {squadMembers?.length || 0} members
+                    </span>
+                  </div>
+
+                  {membersLoading ? (
+                    <div className="text-center py-4">
+                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mx-auto"></div>
+                    </div>
+                  ) : (
+                    <div className="space-y-3 max-h-64 overflow-y-auto">
+                      {squadMembers?.map((member) => (
+                        <div key={member.id} className="flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-50">
+                          <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full flex items-center justify-center">
+                            <Users className="h-4 w-4 text-white" />
+                          </div>
+                          <div className="flex-1">
+                            <p className="text-sm font-medium text-gray-900">
+                              {member.user}
+                            </p>
+                            <p className="text-xs text-gray-500 capitalize">
+                              {member.role}
+                            </p>
+                          </div>
+                          <div className={`w-2 h-2 rounded-full ${
+                            member.has_registered ? 'bg-green-500' : 'bg-gray-300'
+                          }`} title={member.has_registered ? 'Registered' : 'Not registered'} />
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </Card>
+              </motion.div>
+            </div>
+
+            {/* Registration Center Info */}
+            {userSquad?.registration_center && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 }}
+                className="mt-6"
+              >
+                <Card className="p-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                    <MapPin className="h-5 w-5 mr-2" />
+                    Registration Center
+                  </h3>
+
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <div>
+                      <label className="text-sm font-medium text-gray-700">Name</label>
+                      <p className="text-gray-600 mt-1">{userSquad?.registration_center?.name || 'Not specified'}</p>
+                    </div>
+
+                    <div>
+                      <label className="text-sm font-medium text-gray-700">Location</label>
+                      <p className="text-gray-600 mt-1">
+                        {userSquad?.registration_center?.location || userSquad?.registration_center?.address || 'Not specified'}
+                      </p>
+                    </div>
+
+                    <div>
+                      <label className="text-sm font-medium text-gray-700">County</label>
+                      <p className="text-gray-600 mt-1">{userSquad?.registration_center?.county || 'Not specified'}</p>
+                    </div>
+
+                    {userSquad?.registration_center?.constituency && (
+                      <div>
+                        <label className="text-sm font-medium text-gray-700">Constituency</label>
+                        <p className="text-gray-600 mt-1">{userSquad?.registration_center?.constituency}</p>
+                      </div>
+                    )}
+
+                    {userSquad?.registration_center?.ward && (
+                      <div>
+                        <label className="text-sm font-medium text-gray-700">Ward</label>
+                        <p className="text-gray-600 mt-1">{userSquad?.registration_center?.ward}</p>
+                      </div>
+                    )}
+
+                    {userSquad?.registration_center?.polling_station_name && (
+                      <div>
+                        <label className="text-sm font-medium text-gray-700">Polling Station</label>
+                        <p className="text-green-600 mt-1 font-medium">{userSquad?.registration_center?.polling_station_name}</p>
+                      </div>
+                    )}
+                  </div>
+                </Card>
+              </motion.div>
+            )}
+
+            {/* Action Buttons */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4 }}
+              className="mt-6 flex justify-center space-x-4"
             >
-              <MessageSquare className="h-4 w-4 mr-2" />
-              Message Members
-            </Button>
-          )}
+              <Button
+                onClick={() => navigate('/dashboard')}
+                variant="outline"
+              >
+                Back to Dashboard
+              </Button>
 
-          <Button
-            onClick={() => navigate('/join-squad')}
-            variant="outline"
-          >
-            Browse Other Squads
-          </Button>
-        </motion.div>
+              {isSquadCreator && (
+                <Button
+                  onClick={() => setIsMessagingOpen(true)}
+                  className="bg-blue-600 hover:bg-blue-700"
+                >
+                  <MessageSquare className="h-4 w-4 mr-2" />
+                  Message Members
+                </Button>
+              )}
+
+              <Button
+                onClick={() => navigate('/join-squad')}
+                variant="outline"
+              >
+                Browse Other Squads
+              </Button>
+            </motion.div>
+          </>
+        )}
       </div>
     </div>
   );

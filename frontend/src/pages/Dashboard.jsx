@@ -20,12 +20,26 @@ const Dashboard = () => {
     queryClient.invalidateQueries({ queryKey: ['user-membership'] });
   }, [queryClient]);
 
-  const handleJoinSquad = () => {
-    navigate('/squad');
-  };
+  // Join squad mutation - add this for direct joining
+  const joinSquadMutation = useMutation({
+    mutationFn: (squadId) => squadAPI.joinSquad(squadId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['user-membership'] });
+      queryClient.invalidateQueries({ queryKey: ['squads'] });
+      queryClient.invalidateQueries({ queryKey: ['user-squads'] });
+    },
+    onError: (error) => {
+      console.error('Failed to join squad:', error);
+      alert('Failed to join squad: ' + (error.response?.data?.message || error.message));
+    },
+  });
 
   const handleCreateSquad = () => {
     navigate('/squad/create');
+  };
+
+  const handleJoinSquad = () => {
+    navigate('/squad');
   };
 
   const handleFindCenters = () => {
@@ -87,24 +101,32 @@ const Dashboard = () => {
     },
   });
 
-  const userSquads = Array.isArray(squads) ? squads :
-                   squads?.results ? squads.results : [];
+  const userSquads = Array.isArray(squads) ? squads : squads?.results ? squads.results : [];
 
-  // Filter squads where the user is actually a member
-  // ONLY use actual membership data from the backend API
-  const userMemberSquads = userSquads.filter(squad => {
-    // Only consider a squad as user's if we have valid membership data
-    if (userMembership && userMembership.squad_id && userMembership.id) {
-      return squad.id === userMembership.squad_id;
-    }
-    // If no valid membership data, user is not a member of any squad
-    return false;
+  // Check if user has joined any squads based on membership data
+  const hasJoinedSquad = userMembership && userMembership.id ? true : false;
+
+  // Get user's squads - this should contain their actual squad memberships
+  const { data: mySquads, isLoading: mySquadsLoading } = useQuery({
+    queryKey: ['my-squads'],
+    queryFn: () => squadAPI.getMySquads(),
+    enabled: hasJoinedSquad, // Only fetch if user has membership
+    retry: (failureCount, error) => {
+      // Don't retry on 404 (user not a member of any squad)
+      if (error?.response?.status === 404) {
+        return false;
+      }
+      return failureCount < 3;
+    },
   });
+
+  // Use mySquads if available, otherwise fall back to empty array
+  const userMemberSquads = Array.isArray(mySquads) ? mySquads : (mySquads?.results ? mySquads.results : []);
 
   // Debug logging for membership detection
   console.log('Dashboard Membership Debug:', {
     userMembership: userMembership,
-    userMembershipSquadId: userMembership?.squad_id,
+    userMembershipSquadId: userMembership?.squad?.id,
     userMembershipId: userMembership?.id,
     userSquadsLength: userSquads.length,
     userMemberSquadsLength: userMemberSquads.length,
@@ -114,10 +136,7 @@ const Dashboard = () => {
 
   const nearbyCenters = centers || [];
 
-  // Check if user has joined any squads from the filtered squad data
-  const hasJoinedSquad = userMemberSquads.length > 0;
-
-  // Get the first squad as the "current" squad for logic purposes
+  // Get the current squad for logic purposes - use the first squad from mySquads
   const userCurrentSquad = userMemberSquads.length > 0 ? userMemberSquads[0] : null;
   const userMembershipRole = userMembership?.role || 'member';
 
@@ -234,8 +253,8 @@ const Dashboard = () => {
         </Card>
       </motion.div>
 
-      {/* User's Squads */}
-      {userMemberSquads.length > 0 && (
+      {/* All Squads - Show when user has no squads or when showing user's squads */}
+      {(userMemberSquads.length > 0 || (!squadsLoading && !membershipLoading)) && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -245,15 +264,57 @@ const Dashboard = () => {
           <h2 className="text-xl font-bold text-gray-900 mb-4">
             {hasJoinedSquad ? 'Your Squad' : 'Available Squads'}
           </h2>
+
+          {/* Show message when user has membership but no squad info */}
+          {hasJoinedSquad && userMemberSquads.length === 0 && !mySquadsLoading && (
+            <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="font-medium text-blue-900">Squad Membership Detected</h3>
+                  <p className="text-sm text-blue-700 mt-1">
+                    You're a member of a squad, but we couldn't load the squad details.
+                  </p>
+                  <p className="text-xs text-blue-600 mt-1">
+                    Try refreshing the page or contact support if this persists.
+                  </p>
+                </div>
+                <div className="flex space-x-2">
+                  <Button
+                    onClick={() => {
+                      queryClient.invalidateQueries({ queryKey: ['squads'] });
+                      queryClient.invalidateQueries({ queryKey: ['my-squads'] });
+                      queryClient.refetchQueries({ queryKey: ['squads'] });
+                      queryClient.refetchQueries({ queryKey: ['my-squads'] });
+                      alert('Data refreshed! Check if your squad appears.');
+                    }}
+                    variant="outline"
+                    size="sm"
+                    className="border-blue-300 text-blue-700 hover:bg-blue-50"
+                  >
+                    Refresh Data
+                  </Button>
+                  <Button
+                    onClick={() => navigate('/squad')}
+                    variant="outline"
+                    size="sm"
+                    className="border-green-300 text-green-700 hover:bg-green-50"
+                  >
+                    View Squad Page
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {userMemberSquads.map((squad) => (
+            {(hasJoinedSquad ? userMemberSquads : userSquads).map((squad) => (
               <SquadCard
                 key={squad.id}
                 squad={squad}
-                isCurrentUserSquad={hasJoinedSquad && userCurrentSquad?.id === squad.id}
-                onJoin={() => navigate('/join-squad')}
+                isCurrentUserSquad={userCurrentSquad?.id === squad.id}
+                onJoin={(squadId) => joinSquadMutation.mutate(squadId)}
                 onLeave={() => {}}
-                showJoinButton={true}
+                showJoinButton={!hasJoinedSquad || squad.id !== userCurrentSquad?.id}
               />
             ))}
           </div>
@@ -319,14 +380,14 @@ const Dashboard = () => {
       )}
 
       {/* Loading States */}
-      {(squadsLoading || centersLoading || membershipLoading) && (
+      {(squadsLoading || centersLoading || membershipLoading || mySquadsLoading) && (
         <div className="flex justify-center py-8">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
         </div>
       )}
 
       {/* Empty States */}
-      {!squadsLoading && !membershipLoading && userMemberSquads.length === 0 && (
+      {!squadsLoading && !membershipLoading && !mySquadsLoading && userMemberSquads.length === 0 && (
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
