@@ -46,7 +46,13 @@ class Squad(models.Model):
         """Calculate remaining slots available"""
         if self.max_members is None:
             return None  # Unlimited
-        return max(0, self.max_members - self.member_count)
+
+        # Subtract 1 for the owner who is automatically a member
+        # This shows slots available for other users to join
+        slots_for_others = max(0, self.max_members - 1)
+        current_other_members = max(0, self.member_count - 1)  # Exclude owner
+
+        return max(0, slots_for_others - current_other_members)
 
     @property
     def registration_progress(self):
