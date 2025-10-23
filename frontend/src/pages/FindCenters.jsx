@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { MapPin, Navigation, Phone, Search, Filter, Clock, Map, List, ChevronLeft, ChevronRight } from 'lucide-react';
-import { centerAPI } from '../api';
+import { centerAPI, fetchPollingStations } from '../api';
 import { Button, Input, Card, Alert } from '../components/ui';
 import MapView from '../components/MapView';
 
@@ -34,13 +34,7 @@ const FindCenters = () => {
   // Fetch polling stations data which contains registration centers
   const { data: pollingStations = { features: [] }, isLoading, error } = useQuery({
     queryKey: ['polling-stations'],
-    queryFn: async () => {
-      const response = await fetch('/polling_stations.geojson');
-      if (!response.ok) {
-        throw new Error('Failed to load polling stations data');
-      }
-      return await response.json();
-    },
+    queryFn: fetchPollingStations,
     retry: 3,
     staleTime: 5 * 60 * 1000, // Cache for 5 minutes
     cacheTime: 10 * 60 * 1000, // Keep in cache for 10 minutes

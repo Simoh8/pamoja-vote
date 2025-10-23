@@ -24,7 +24,11 @@ import axios from 'axios';
 // API Client Configuration
 class ApiClient {
   constructor() {
-    this.baseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
+    // More robust API URL configuration
+    this.baseURL = import.meta.env.VITE_API_BASE_URL ||
+                   (import.meta.env.VITE_ENVIRONMENT === 'production'
+                     ? '/api'
+                     : 'http://localhost:8000/api');
 
     // Initialize axios client
     this.client = axios.create({
@@ -248,8 +252,8 @@ export const centerAPI = {
     apiClient.get('/centers/', params),
 
   // Get nearby centers (requires geolocation)
-  // getNearbyCenters: () =>
-  //   apiClient.get('/centers/nearby/'),
+  getNearbyCenters: () =>
+    apiClient.get('/centers/nearby/'),
 
   // Get specific center
   getCenter: (id) =>
@@ -311,6 +315,30 @@ export const getCurrentUser = () => {
     return userStr ? JSON.parse(userStr) : null;
   } catch {
     return null;
+  }
+};
+
+// Utility function to fetch polling stations data (static file)
+export const fetchPollingStations = async () => {
+  const isProduction = import.meta.env.VITE_ENVIRONMENT === 'production';
+
+  try {
+    // In production, try to fetch from the public directory
+    const response = await fetch('/polling_stations.geojson');
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    return await response.json();
+  } catch (error) {
+    console.warn('Failed to fetch polling stations from public directory:', error);
+
+    // Fallback: try to fetch from backend API
+    try {
+      return await apiClient.get('/polling-stations/');
+    } catch (apiError) {
+      console.error('Failed to fetch polling stations from API:', apiError);
+      throw new Error('Unable to load polling stations data');
+    }
   }
 };
 
