@@ -15,6 +15,6 @@ python3 manage.py migrate --noinput
 
 # Collect static files
 echo "🎨 Collecting static files..."
-python3 manage.py collectstatic --noinput
+python3 manage.py collectstatic --noinput --clear
 
 echo "✅ Build process completed successfully!"
