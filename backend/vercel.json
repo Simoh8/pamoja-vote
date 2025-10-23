@@ -1,15 +1,12 @@
 {
   "version": 2,
   "builds": [
-    {
-      "src": "pamoja_vote/wsgi.py",
-      "use": "@vercel/python",
-      "config": { "maxLambdaSize": "50mb" }
-    }
+    { "src": "pamoja_vote/wsgi.py", "use": "@vercel/python" },
+    { "src": "build_files.sh", "use": "@vercel/static-build", "config": { "distDir": "staticfiles" } }
   ],
   "routes": [
     { "src": "^/static/(.*)$", "dest": "/staticfiles/$1" },
     { "src": "/(.*)", "dest": "pamoja_vote/wsgi.py" }
   ],
-  "buildCommand": "bash build_files.sh"
+  "outputDirectory": "staticfiles"
 }
