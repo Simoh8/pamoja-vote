@@ -67,6 +67,7 @@ MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'pamoja_vote.middleware.LogErrorsMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware', 
 
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
