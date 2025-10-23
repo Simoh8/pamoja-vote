@@ -65,9 +65,9 @@ INSTALLED_APPS = [
 # ----------------------------------------------------------------------
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware', 
     'django.contrib.sessions.middleware.SessionMiddleware',
     'pamoja_vote.middleware.LogErrorsMiddleware',
-    'whitenoise.middleware.WhiteNoiseMiddleware', 
 
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -173,6 +173,7 @@ MEDIA_ROOT = BASE_DIR / 'media'
 
 # Extra: for Vercel / production builds
 STATICFILES_DIRS = [BASE_DIR / "static"] if (BASE_DIR / "static").exists() else []
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 # ----------------------------------------------------------------------
 # SECURITY HEADERS (recommended for production)
