@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Users, MapPin, Calendar, UserPlus, Clock, Star } from 'lucide-react';
+import { Users, MapPin, Calendar, UserPlus, Clock, Star, Crown } from 'lucide-react';
 import { Button } from './ui';
 import Card from './Card';
 
@@ -10,10 +10,14 @@ const SquadCard = ({
   onLeave = () => {},
   isJoining = false,
   showJoinButton = true,
-  className = ""
+  className = "",
+  currentUser = null
 }) => {
   // Safely check membership status
   const isUserMember = Boolean(isCurrentUserSquad);
+
+  // Check if current user is the owner of this squad
+  const isOwner = currentUser && squad.owner === currentUser.phone_number;
 
   // Debug logging for membership detection
   // console.log('SquadCard Debug:', {
@@ -112,12 +116,20 @@ const SquadCard = ({
                 </div>
               </div>
             </div>
-            {isUserMember && (
-              <div className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white px-4 py-2.5 rounded-full text-sm font-bold shadow-xl border-2 border-white flex items-center space-x-2 animate-bounce">
-                <Star className="w-4 h-4 fill-current" />
-                <span>You're a Member</span>
-              </div>
-            )}
+            <div className="flex flex-col items-end space-y-2">
+              {isOwner && (
+                <div className="bg-gradient-to-r from-purple-500 via-pink-500 to-purple-600 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-xl border-2 border-white flex items-center space-x-2 animate-pulse">
+                  <Crown className="w-4 h-4 fill-current" />
+                  <span>Owner</span>
+                </div>
+              )}
+              {isUserMember && !isOwner && (
+                <div className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white px-4 py-2.5 rounded-full text-sm font-bold shadow-xl border-2 border-white flex items-center space-x-2 animate-bounce">
+                  <Star className="w-4 h-4 fill-current" />
+                  <span>You're a Member</span>
+                </div>
+              )}
+            </div>
           </div>
 
           <p className="text-gray-600 text-sm mb-4 line-clamp-3">

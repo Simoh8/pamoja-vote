@@ -29,7 +29,7 @@ const Dashboard = () => {
       queryClient.invalidateQueries({ queryKey: ['user-squads'] });
     },
     onError: (error) => {
-      console.error('Failed to join squad:', error);
+      // console.error('Failed to join squad:', error);
       alert('Failed to join squad: ' + (error.response?.data?.message || error.message));
     },
   });
@@ -315,6 +315,7 @@ const Dashboard = () => {
                 onJoin={(squadId) => joinSquadMutation.mutate(squadId)}
                 onLeave={() => {}}
                 showJoinButton={!hasJoinedSquad || squad.id !== userCurrentSquad?.id}
+                currentUser={user}
               />
             ))}
           </div>

@@ -23,7 +23,7 @@ class CenterSerializer(serializers.ModelSerializer):
 
 class SquadSerializer(serializers.ModelSerializer):
     """Serializer for Squad model"""
-    owner = serializers.StringRelatedField(read_only=True)
+    owner = serializers.CharField(source='owner.phone_number', read_only=True)
     members = SquadMemberSerializer(source='squad_members', many=True, read_only=True)
     member_count = serializers.ReadOnlyField()
     registration_progress = serializers.ReadOnlyField()
