@@ -24,11 +24,12 @@ from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 # Import Spectacular views for API documentation
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView, SpectacularRedocView
 
+# Import viewsets for API documentation
 from users.views import RegisterView, LoginView, VerifyOTPView, ProfileView, LogoutView
 from squads.views import SquadViewSet, PublicSquadsView
-from centers.views import CenterViewSet, NearbyCentersView, CentersByCountyView, PollingStationsView
+from centers.views import CenterViewSet
 from events.views import EventViewSet, UpcomingEventsView
-from invites.views import InviteViewSet, WhatsAppInviteView, BulkInviteView
+from invites.views import InviteViewSet
 
 # API Router
 router = DefaultRouter()
@@ -50,11 +51,6 @@ urlpatterns = [
 
     # API endpoints
     path('api/', include(router.urls)),
-    path('api/centers/nearby/', NearbyCentersView.as_view(), name='nearby_centers'),
-    path('api/centers/county/<str:county>/', CentersByCountyView.as_view(), name='centers_by_county'),
-    path('api/centers/polling-stations/', PollingStationsView.as_view(), name='polling_stations'),
-    path('api/invites/whatsapp/', WhatsAppInviteView.as_view(), name='whatsapp_invite'),
-    path('api/invites/bulk/', BulkInviteView.as_view(), name='bulk_invite'),
     path('api/public/squads/', PublicSquadsView.as_view(), name='public_squads'),
     path('api/events/upcoming/', UpcomingEventsView.as_view(), name='upcoming_events'),
 
