@@ -11,8 +11,22 @@
   ],
   "routes": [
     {
+      "src": "/api/(.*)",
+      "dest": "https://pamoja-vote.vercel.app/api/$1"
+    },
+    {
+      "src": "/static/(.*)",
+      "headers": { "cache-control": "s-maxage=31536000, immutable" },
+      "dest": "/dist/static/$1"
+    },
+    {
+      "src": "/assets/(.*)",
+      "headers": { "cache-control": "s-maxage=31536000, immutable" },
+      "dest": "/dist/assets/$1"
+    },
+    {
       "src": "/(.*)",
-      "dest": "/dist/$1"
+      "dest": "/dist/index.html"
     }
   ],
   "outputDirectory": "dist",

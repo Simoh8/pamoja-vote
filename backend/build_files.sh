@@ -23,3 +23,4 @@ python3 manage.py collectstatic --noinput --clear
 mkdir -p media
 
 echo "✅ Build process completed successfully!"
+echo "📄 Django backend ready for deployment"
