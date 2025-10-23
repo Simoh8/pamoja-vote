@@ -336,7 +336,6 @@ export const fetchPollingStations = async () => {
     try {
       return await apiClient.get('/centers/polling-stations/');
     } catch (apiError) {
-      console.error('Failed to fetch polling stations from API:', apiError);
       throw new Error('Unable to load polling stations data');
     }
   }
