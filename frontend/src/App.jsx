@@ -120,12 +120,10 @@ function App() {
                 <Route
                   path="/find-centers"
                   element={
-                    <PrivateRoute>
-                      <div className="pb-16">
-                        <Navbar />
-                        <FindCenters />
-                      </div>
-                    </PrivateRoute>
+                    <div className="pb-16">
+                      <Navbar />
+                      <FindCenters />
+                    </div>
                   }
                 />
 

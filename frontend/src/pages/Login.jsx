@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useMutation } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Phone, MessageCircle, ArrowLeft } from 'lucide-react';
+import { Phone, MessageCircle, ArrowLeft, MapPin } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { authAPI } from '../api';
 import { Button, Input, Card, Alert, OtpInput } from '../components/ui';
@@ -145,6 +145,10 @@ const Login = () => {
     setStep('phone');
     setOtp('');
     setError('');
+  };
+
+  const handleFindCenters = () => {
+    navigate('/find-centers');
   };
 
   const formatPhoneForDisplay = (phone) => {
@@ -338,6 +342,29 @@ const Login = () => {
                 </p>
               </motion.div>
             )}
+          </Card>
+        </motion.div>
+
+        {/* Find Centers Section */}
+        <motion.div
+          variants={itemVariants}
+          className="mt-6"
+        >
+          <Card className="p-6 hover:shadow-lg transition-shadow cursor-pointer border-2 border-orange-200 hover:border-orange-300" onClick={handleFindCenters}>
+            <div className="flex items-center">
+              <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center mr-4">
+                <MapPin className="w-6 h-6 text-orange-600" />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-semibold text-gray-900">Find Registration Centers</h3>
+                <p className="text-sm text-gray-600">Locate voter registration spots near you</p>
+              </div>
+              <div className="text-orange-600">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </div>
+            </div>
           </Card>
         </motion.div>
 

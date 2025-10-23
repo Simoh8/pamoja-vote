@@ -3,7 +3,7 @@ import { User, LogOut } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 const Navbar = () => {
-  const { user, logout } = useAuth();
+  const { user, logout, isAuthenticated } = useAuth();
   const navigate = useNavigate();
 
   const handleLogout = async () => {
@@ -19,10 +19,41 @@ const Navbar = () => {
     navigate('/profile');
   };
 
-  const handleFindCentersClick = () => {
-    navigate('/find-centers');
+  const handleLoginClick = () => {
+    navigate('/login');
   };
 
+  // If user is not authenticated, show minimal navbar
+  if (!isAuthenticated) {
+    return (
+      <nav className="bg-white shadow-sm border-b">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            {/* Logo */}
+            <button
+              onClick={() => navigate('/')}
+              className="flex items-center hover:opacity-80 transition-opacity cursor-pointer"
+            >
+              <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
+                <span className="text-white font-bold text-sm">🇰🇪</span>
+              </div>
+              <span className="ml-2 text-xl font-bold text-gray-900">PamojaVote</span>
+            </button>
+
+            {/* Login link for non-authenticated users */}
+            <button
+              onClick={handleLoginClick}
+              className="text-sm text-blue-600 hover:text-blue-800 font-medium transition-colors"
+            >
+              Sign In
+            </button>
+          </div>
+        </div>
+      </nav>
+    );
+  }
+
+  // Authenticated user navbar
   return (
     <nav className="bg-white shadow-sm border-b">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -40,12 +71,6 @@ const Navbar = () => {
 
           {/* User actions */}
           <div className="flex items-center space-x-4">
-            <button
-              onClick={handleFindCentersClick}
-              className="text-sm text-blue-600 hover:text-blue-800 font-medium transition-colors"
-            >
-              Find Centers
-            </button>
             <span className="text-sm text-gray-700">
               Hey, {user?.first_name || user?.phone_number} 👋
             </span>
