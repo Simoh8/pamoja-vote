@@ -19,19 +19,98 @@ const Squad = () => {
     queryFn: () => squadAPI.getMyMembership(),
   });
 
-  // console.log('Squad.jsx - Membership Debug:', {
-  //   userMembership,
-  //   membershipLoading,
-  //   membershipError,
-  //   hasJoinedSquad: Boolean(userMembership && userMembership.id)
-  // });
-
   const hasJoinedSquad = userMembership && userMembership.id;
   const userSquad = userMembership?.squad;
   const isSquadCreator = userSquad?.owner === userMembership?.user;
 
-  // Since we don't have squad information in the membership response,
-  // redirect users with membership back to dashboard or join-squad page
+  // Get squad members if user has joined a squad
+  const { data: squadMembers, isLoading: membersLoading, error: membersError } = useQuery({
+    queryKey: ['squad-members', userSquad?.id],
+    queryFn: () => squadAPI.getSquadMembers(userSquad.id),
+    enabled: hasJoinedSquad && !!userSquad?.id,
+  });
+
+  // Send message to squad members mutation
+  const sendMessageMutation = useMutation({
+    mutationFn: (messageData) => inviteAPI.sendBulkInvite({
+      squad_id: userSquad.id,
+      message: messageData.message,
+    }),
+    onSuccess: () => {
+      setMessage('');
+      setMessagingError('');
+      setIsMessagingOpen(false);
+      alert('Message sent to all squad members!');
+    },
+    onError: (error) => {
+      setMessagingError(error.response?.data?.message || 'Failed to send message');
+    },
+  });
+
+  const handleSendMessage = () => {
+    if (!message.trim()) {
+      setMessagingError('Please enter a message');
+      return;
+    }
+    sendMessageMutation.mutate({ message: message.trim() });
+  };
+
+  const handleJoinSquad = () => {
+    navigate('/join-squad');
+  };
+
+  const handleCreateSquad = () => {
+    navigate('/squad/create');
+  };
+
+  // Render loading state
+  if (membershipLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 p-4">
+        <div className="max-w-4xl mx-auto text-center py-8">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading your squad information...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Render error state for membership loading
+  if (membershipError) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 p-4">
+        <div className="max-w-4xl mx-auto text-center">
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-8"
+          >
+            <div className="w-16 h-16 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
+              <Users className="h-8 w-8 text-white" />
+            </div>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">Squad Management</h1>
+          </motion.div>
+          <Card className="p-8 bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200 max-w-2xl mx-auto">
+            <Alert 
+              type="error" 
+              message={`Error loading membership: ${membershipError.message}`}
+              className="mb-6"
+            />
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Button onClick={() => navigate('/dashboard')} variant="outline">
+                Back to Dashboard
+              </Button>
+              <Button onClick={() => window.location.reload()}>
+                Try Again
+              </Button>
+            </div>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
+  // If user has joined squad but squad data is missing
   if (hasJoinedSquad && !userSquad) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 p-4">
@@ -67,56 +146,6 @@ const Squad = () => {
     );
   }
 
-  // Get squad members if user has joined a squad
-  const { data: squadMembers, isLoading: membersLoading, error: membersError } = useQuery({
-    queryKey: ['squad-members', userSquad?.id],
-    queryFn: () => squadAPI.getSquadMembers(userSquad.id),
-    enabled: hasJoinedSquad && !!userSquad?.id,
-  });
-
-  // console.log('Squad.jsx - Members Debug:', {
-  //   userSquad,
-  //   squadMembers,
-  //   membersLoading,
-  //   membersError,
-  //   enabled: hasJoinedSquad && !!userSquad?.id
-  // });
-
-  // Send message to squad members mutation
-  const sendMessageMutation = useMutation({
-    mutationFn: (messageData) => inviteAPI.sendBulkInvite({
-      squad_id: userSquad.id,
-      message: messageData.message,
-    }),
-    onSuccess: () => {
-      setMessage('');
-      setMessagingError('');
-      setIsMessagingOpen(false);
-      // Show success toast or alert
-      alert('Message sent to all squad members!');
-    },
-    onError: (error) => {
-      setMessagingError(error.response?.data?.message || 'Failed to send message');
-    },
-  });
-
-  const handleSendMessage = () => {
-    if (!message.trim()) {
-      setMessagingError('Please enter a message');
-      return;
-    }
-
-    sendMessageMutation.mutate({ message: message.trim() });
-  };
-
-  const handleJoinSquad = () => {
-    navigate('/join-squad');
-  };
-
-  const handleCreateSquad = () => {
-    navigate('/squad/create');
-  };
-
   // If user hasn't joined any squad, show the original landing page
   if (!hasJoinedSquad) {
     return (
@@ -135,65 +164,46 @@ const Squad = () => {
             <p className="text-gray-600">Team up with friends and make your voice count together</p>
           </motion.div>
 
-          {/* Error State */}
-          {membershipError && (
-            <Alert
-              type="error"
-              message={`Error loading membership: ${membershipError.message}`}
-              className="mb-6"
-            />
-          )}
+          {/* Action Cards */}
+          <div className="grid gap-6 md:grid-cols-2 max-w-2xl mx-auto">
+            {/* Join Squad Card */}
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.1 }}
+            >
+              <Card className="p-6 text-center hover:shadow-lg transition-shadow cursor-pointer"
+                    onClick={handleJoinSquad}>
+                <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <UserPlus className="h-6 w-6 text-green-600" />
+                </div>
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">Join a Squad</h3>
+                <p className="text-gray-600 mb-4">Team up with friends</p>
+                <Button variant="outline" className="w-full">
+                  Browse Squads <ArrowRight className="h-4 w-4 ml-2" />
+                </Button>
+              </Card>
+            </motion.div>
 
-          {/* Loading State */}
-          {membershipLoading && (
-            <div className="text-center py-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-              <p className="text-gray-600">Loading your squad information...</p>
-            </div>
-          )}
-
-          {/* Action Cards (only show if not loading and no error) */}
-          {!membershipLoading && !membershipError && (
-            <div className="grid gap-6 md:grid-cols-2 max-w-2xl mx-auto">
-              {/* Join Squad Card */}
-              <motion.div
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.1 }}
-              >
-                <Card className="p-6 text-center hover:shadow-lg transition-shadow cursor-pointer"
-                      onClick={handleJoinSquad}>
-                  <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <UserPlus className="h-6 w-6 text-green-600" />
-                  </div>
-                  <h3 className="text-xl font-semibold text-gray-900 mb-2">Join a Squad</h3>
-                  <p className="text-gray-600 mb-4">Team up with friends</p>
-                  <Button variant="outline" className="w-full">
-                    Browse Squads <ArrowRight className="h-4 w-4 ml-2" />
-                  </Button>
-                </Card>
-              </motion.div>
-
-              {/* Create Squad Card */}
-              <motion.div
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.2 }}
-              >
-                <Card className="p-6 text-center hover:shadow-lg transition-shadow cursor-pointer"
-                      onClick={handleCreateSquad}>
-                  <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <Plus className="h-6 w-6 text-blue-600" />
-                  </div>
-                  <h3 className="text-xl font-semibold text-gray-900 mb-2">Create Squad</h3>
-                  <p className="text-gray-600 mb-4">Start your own group</p>
-                  <Button className="w-full">
-                    Create Squad <ArrowRight className="h-4 w-4 ml-2" />
-                  </Button>
-                </Card>
-              </motion.div>
-            </div>
-          )}
+            {/* Create Squad Card */}
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.2 }}
+            >
+              <Card className="p-6 text-center hover:shadow-lg transition-shadow cursor-pointer"
+                    onClick={handleCreateSquad}>
+                <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Plus className="h-6 w-6 text-blue-600" />
+                </div>
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">Create Squad</h3>
+                <p className="text-gray-600 mb-4">Start your own group</p>
+                <Button className="w-full">
+                  Create Squad <ArrowRight className="h-4 w-4 ml-2" />
+                </Button>
+              </Card>
+            </motion.div>
+          </div>
 
           {/* Info Section */}
           <motion.div
@@ -309,7 +319,7 @@ const Squad = () => {
         )}
 
         {/* Error State for Squad Loading */}
-        {membershipError && (
+        {membersError && (
           <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -317,27 +327,22 @@ const Squad = () => {
           >
             <Alert
               type="error"
-              message={`Error loading squad: ${membershipError.message}`}
+              message={`Error loading squad members: ${membersError.message}`}
               className="mb-4"
             />
-            <div className="text-center">
-              <Button onClick={() => navigate('/dashboard')} variant="outline">
-                Back to Dashboard
-              </Button>
-            </div>
           </motion.div>
         )}
 
-        {/* Loading State for Squad */}
-        {membershipLoading && (
+        {/* Loading State for Squad Members */}
+        {membersLoading && (
           <div className="text-center py-8">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-            <p className="text-gray-600">Loading your squad information...</p>
+            <p className="text-gray-600">Loading squad members...</p>
           </div>
         )}
 
         {/* Squad Details - Only show if no errors and not loading */}
-        {!membershipError && !membershipLoading && (
+        {!membersError && (
           <>
             <div className="grid gap-6 md:grid-cols-2">
               {/* Squad Info */}

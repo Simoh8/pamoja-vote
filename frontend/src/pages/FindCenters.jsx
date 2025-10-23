@@ -107,15 +107,48 @@ const FindCenters = () => {
     const trimmedSearchTerm = searchTerm.trim().toLowerCase();
 
     const filtered = centersArray.filter(center => {
-      const matchesSearch = trimmedSearchTerm === '' ||
-        center?.name?.toLowerCase().includes(trimmedSearchTerm) ||
-        center?.location?.toLowerCase().includes(trimmedSearchTerm) ||
-        center?.county?.toLowerCase().includes(trimmedSearchTerm) ||
-        center?.constituency?.toLowerCase().includes(trimmedSearchTerm);
+      if (!center) return false;
 
+      const trimmedSearch = trimmedSearchTerm.toLowerCase();
+
+      // Enhanced search across multiple fields
+      const searchFields = [
+        center?.name,
+        center?.location,
+        center?.county,
+        center?.constituency,
+        center?.description
+      ].filter(Boolean);
+
+      // Direct includes search
+      const directMatches = searchFields.some(field =>
+        field.toLowerCase().includes(trimmedSearch)
+      );
+
+      // Partial word matching for better results
+      const partialMatches = searchFields.some(field =>
+        field.toLowerCase().split(/\s+/).some(word =>
+          word.startsWith(trimmedSearch) ||
+          trimmedSearch.startsWith(word.slice(0, Math.min(3, word.length))) ||
+          // Fuzzy matching for typos (e.g., "kigio" should match "kig")
+          (trimmedSearch.length >= 3 && word.includes(trimmedSearch.slice(0, 3)))
+        )
+      );
+
+      // Fallback: search in JSON representation for debugging
+      const jsonMatch = JSON.stringify(center).toLowerCase().includes(trimmedSearch);
+
+      const result = directMatches || partialMatches || (trimmedSearch.length >= 3 && jsonMatch);
+
+      // Debug logging for troubleshooting
+      if (result && trimmedSearch.length >= 3) {
+        console.log(`Found center: ${center.name} (${center.location}, ${center.county}) for search: "${trimmedSearch}"`);
+      }
+
+      // County filter (separate from search)
       const matchesCounty = selectedCounty === '' || center?.county === selectedCounty;
 
-      return matchesSearch && matchesCounty;
+      return (directMatches || partialMatches || (trimmedSearch.length >= 3 && jsonMatch)) && matchesCounty;
     });
 
     return filtered;
@@ -233,6 +266,21 @@ const FindCenters = () => {
           </Card>
         </motion.div>
 
+        {/* Search Debug Info (only show when searching) */}
+        {searchTerm.length >= 3 && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-4 p-3 bg-gray-50 border border-gray-200 rounded-lg"
+          >
+            <p className="text-sm text-gray-600">
+              🔍 Search Debug: Found {filteredCenters.length} centers for "{searchTerm}"
+              {selectedCounty && ` in ${selectedCounty} county`}
+              {centersArray.length > 0 && ` (from ${centersArray.length} total centers)`}
+            </p>
+          </motion.div>
+        )}
+
         {/* Tab Navigation */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -349,12 +397,19 @@ const FindCenters = () => {
                   </h3>
                   <p className="text-gray-600">
                     {searchTerm || selectedCounty
-                      ? 'Try adjusting your search or filter criteria'
+                      ? `No centers found for "${searchTerm}" in ${selectedCounty ? `${selectedCounty} county` : 'all counties'}. Try a different search term or check your spelling.`
                       : error
                         ? 'Please check your connection and try again'
-                        : 'No registration centers available at the moment'
+                        : centersArray.length === 0
+                          ? 'No registration centers are available. Please contact support.'
+                          : 'No registration centers are currently available that match your criteria'
                     }
                   </p>
+                  {centersArray.length > 0 && (searchTerm || selectedCounty) && (
+                    <p className="text-sm text-gray-500 mt-2">
+                      Total centers available: {centersArray.length} | Current filters: {searchTerm ? `Search: "${searchTerm}"` : 'No search'} {selectedCounty ? `| County: ${selectedCounty}` : ''}
+                    </p>
+                  )}
                 </Card>
               ) : (
                 <>
@@ -488,10 +543,19 @@ const FindCenters = () => {
                   <h3 className="text-xl font-semibold text-gray-900 mb-2">No centers to display on map</h3>
                   <p className="text-gray-600">
                     {searchTerm || selectedCounty
-                      ? 'Try adjusting your search or filter criteria'
-                      : 'No registration centers available at the moment'
+                      ? `No centers found for "${searchTerm}" in ${selectedCounty ? `${selectedCounty} county` : 'all counties'}. Try a different search term or check your spelling.`
+                      : error
+                        ? 'Please check your connection and try again'
+                        : centersArray.length === 0
+                          ? 'No registration centers are available. Please contact support.'
+                          : 'No registration centers are currently available that match your criteria'
                     }
                   </p>
+                  {centersArray.length > 0 && (searchTerm || selectedCounty) && (
+                    <p className="text-sm text-gray-500 mt-2">
+                      Total centers available: {centersArray.length} | Current filters: {searchTerm ? `Search: "${searchTerm}"` : 'No search'} {selectedCounty ? `| County: ${selectedCounty}` : ''}
+                    </p>
+                  )}
                 </div>
               ) : (
                 <MapView centers={filteredCenters} />
