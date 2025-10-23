@@ -46,17 +46,17 @@ const SquadCard = ({
   const canJoinThisSquad = !isUserMember && showJoinButton;
 
   // Debug logging for button logic
-  console.log('SquadCard Button Logic Debug:', {
-    isUserMember,
-    isRegistrationFuture,
-    showJoinButton,
-    canJoinThisSquad,
-    registrationDate: squad?.voter_registration_date,
-    currentDate: new Date().toISOString(),
-    squadId: squad?.id,
-    squadName: squad?.name,
-    componentLocation: 'Dashboard'
-  });
+  // console.log('SquadCard Button Logic Debug:', {
+  //   isUserMember,
+  //   isRegistrationFuture,
+  //   showJoinButton,
+  //   canJoinThisSquad,
+  //   registrationDate: squad?.voter_registration_date,
+  //   currentDate: new Date().toISOString(),
+  //   squadId: squad?.id,
+  //   squadName: squad?.name,
+  //   componentLocation: 'Dashboard'
+  // });
   const getButtonContent = () => {
     if (isUserMember) {
       return {

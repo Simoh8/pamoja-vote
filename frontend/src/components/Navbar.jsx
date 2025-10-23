@@ -19,6 +19,10 @@ const Navbar = () => {
     navigate('/profile');
   };
 
+  const handleFindCentersClick = () => {
+    navigate('/find-centers');
+  };
+
   return (
     <nav className="bg-white shadow-sm border-b">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -36,12 +40,12 @@ const Navbar = () => {
 
           {/* User actions */}
           <div className="flex items-center space-x-4">
-            <a
-              href="/find-centers"
+            <button
+              onClick={handleFindCentersClick}
               className="text-sm text-blue-600 hover:text-blue-800 font-medium transition-colors"
             >
               Find Centers
-            </a>
+            </button>
             <span className="text-sm text-gray-700">
               Hey, {user?.first_name || user?.phone_number} 👋
             </span>

@@ -19,12 +19,12 @@ const Squad = () => {
     queryFn: () => squadAPI.getMyMembership(),
   });
 
-  console.log('Squad.jsx - Membership Debug:', {
-    userMembership,
-    membershipLoading,
-    membershipError,
-    hasJoinedSquad: Boolean(userMembership && userMembership.id)
-  });
+  // console.log('Squad.jsx - Membership Debug:', {
+  //   userMembership,
+  //   membershipLoading,
+  //   membershipError,
+  //   hasJoinedSquad: Boolean(userMembership && userMembership.id)
+  // });
 
   const hasJoinedSquad = userMembership && userMembership.id;
   const userSquad = userMembership?.squad;
@@ -74,13 +74,13 @@ const Squad = () => {
     enabled: hasJoinedSquad && !!userSquad?.id,
   });
 
-  console.log('Squad.jsx - Members Debug:', {
-    userSquad,
-    squadMembers,
-    membersLoading,
-    membersError,
-    enabled: hasJoinedSquad && !!userSquad?.id
-  });
+  // console.log('Squad.jsx - Members Debug:', {
+  //   userSquad,
+  //   squadMembers,
+  //   membersLoading,
+  //   membersError,
+  //   enabled: hasJoinedSquad && !!userSquad?.id
+  // });
 
   // Send message to squad members mutation
   const sendMessageMutation = useMutation({

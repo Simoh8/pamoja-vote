@@ -50,7 +50,7 @@ const Dashboard = () => {
   const clearMembershipMutation = useMutation({
     mutationFn: () => squadAPI.clearMembership(),
     onSuccess: (response) => {
-      console.log('Membership cleared successfully:', response);
+      // console.log('Membership cleared successfully:', response);
       // Invalidate all related queries to force fresh data fetch
       queryClient.invalidateQueries({ queryKey: ['user-membership'] });
       queryClient.invalidateQueries({ queryKey: ['squads'] });
@@ -124,15 +124,15 @@ const Dashboard = () => {
   const userMemberSquads = Array.isArray(mySquads) ? mySquads : (mySquads?.results ? mySquads.results : []);
 
   // Debug logging for membership detection
-  console.log('Dashboard Membership Debug:', {
-    userMembership: userMembership,
-    userMembershipSquadId: userMembership?.squad?.id,
-    userMembershipId: userMembership?.id,
-    userSquadsLength: userSquads.length,
-    userMemberSquadsLength: userMemberSquads.length,
-    userMemberSquadIds: userMemberSquads.map(s => s.id),
-    allSquadMemberCounts: userSquads.map(s => ({ id: s.id, name: s.name, members: s.member_count }))
-  });
+  // console.log('Dashboard Membership Debug:', {
+  //   userMembership: userMembership,
+  //   userMembershipSquadId: userMembership?.squad?.id,
+  //   userMembershipId: userMembership?.id,
+  //   userSquadsLength: userSquads.length,
+  //   userMemberSquadsLength: userMemberSquads.length,
+  //   userMemberSquadIds: userMemberSquads.map(s => s.id),
+  //   allSquadMemberCounts: userSquads.map(s => ({ id: s.id, name: s.name, members: s.member_count }))
+  // });
 
   const nearbyCenters = centers || [];
 

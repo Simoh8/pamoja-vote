@@ -161,7 +161,7 @@ const MapView = ({ centers = [], maxMarkers = 1000 }) => {
       for (const createIcon of approaches) {
         try {
           const icon = createIcon();
-          console.log('Custom icon created successfully');
+          // console.log('Custom icon created successfully');
           return icon;
         } catch (error) {
           console.warn('Icon creation approach failed:', error);
@@ -169,11 +169,11 @@ const MapView = ({ centers = [], maxMarkers = 1000 }) => {
       }
 
       // If all approaches fail, return null to use default marker
-      console.log('All icon creation approaches failed, using default marker');
+      // console.log('All icon creation approaches failed, using default marker');
       return null;
 
     } catch (error) {
-      console.error('Failed to create custom icon:', error);
+      // console.error('Failed to create custom icon:', error);
       return null;
     }
   }, []);
