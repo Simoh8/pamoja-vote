@@ -1,0 +1,9 @@
+{
+  "version": 2,
+  "builds": [
+    { "src": "pamoja_vote/wsgi.py", "use": "@vercel/python" }
+  ],
+  "routes": [
+    { "src": "/(.*)", "dest": "pamoja_vote/wsgi.py" }
+  ]
+}
