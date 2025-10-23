@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
+
     'django.contrib.messages',
     'django.contrib.staticfiles',
 
@@ -150,8 +151,9 @@ SIMPLE_JWT = {
 # ----------------------------------------------------------------------
 CORS_ALLOWED_ORIGINS = os.getenv(
     'CORS_ALLOWED_ORIGINS',
-    'http://localhost:3000,http://127.0.0.1:3000,http://localhost:5173,http://127.0.0.1:5173'
+    'http://localhost:3000,http://127.0.0.1:3000,http://localhost:5173,http://127.0.0.1:5173,https://pamoja-vote.vercel.app'
 ).split(',')
+
 CORS_ALLOW_CREDENTIALS = True
 
 # ----------------------------------------------------------------------
