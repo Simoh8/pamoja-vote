@@ -1,7 +1,8 @@
 {
   "version": 2,
   "builds": [
-    { "src": "pamoja_vote/wsgi.py", "use": "@vercel/python" }
+    { "src": "pamoja_vote/wsgi.py", "use": "@vercel/python" },
+    { "src": "build_files.sh", "use": "@vercel/static-build", "config": { "distDir": "staticfiles" } }
   ],
   "routes": [
     { "src": "/(.*)", "dest": "pamoja_vote/wsgi.py" }
