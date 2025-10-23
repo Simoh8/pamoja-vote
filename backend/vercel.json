@@ -1,5 +1,6 @@
 {
   "version": 2,
+  "buildCommand": "bash build_files.sh",
   "builds": [
     {
       "src": "pamoja_vote/wsgi.py",
@@ -17,6 +18,5 @@
     { "src": "^/media/(.*)$", "dest": "/media/$1" },
     { "src": "/(.*)", "dest": "pamoja_vote/wsgi.py" }
   ],
-  "outputDirectory": "staticfiles",
-  "buildCommand": "bash build_files.sh"
+  "outputDirectory": "staticfiles"
 }
