@@ -8,6 +8,7 @@ import { squadAPI, centerAPI } from '../api';
 import { Button } from '../components/ui';
 import Card from '../components/Card';
 import SquadCard from '../components/SquadCard';
+import { toast } from 'react-hot-toast'; // or your preferred toast library
 
 const Dashboard = () => {
   const { user } = useAuth();
@@ -27,23 +28,42 @@ const Dashboard = () => {
       queryClient.invalidateQueries({ queryKey: ['user-membership'] });
       queryClient.invalidateQueries({ queryKey: ['squads'] });
       queryClient.invalidateQueries({ queryKey: ['user-squads'] });
+      toast.success('Successfully joined the squad!');
     },
     onError: (error) => {
-      // console.error('Failed to join squad:', error);
-      alert('Failed to join squad: ' + (error.response?.data?.message || error.message));
+      toast.error('Failed to join squad: ' + (error.response?.data?.message || error.message));
     },
   });
-
-  const handleCreateSquad = () => {
-    navigate('/squad/create');
-  };
 
   const handleJoinSquad = () => {
     navigate('/squad');
   };
 
+  const handleCreateSquad = () => {
+    navigate('/squad/create');
+  };
   const handleFindCenters = () => {
     navigate('/find-centers');
+  };
+  
+  const handleJoinSquadFromDashboard = (squadId) => {
+    // Check if user is owner of any squad with future registration
+    if (hasOwnedSquadWithFutureRegistration) {
+      const ownedSquad = ownedSquads.find(squad =>
+        squad.voter_registration_date && new Date(squad.voter_registration_date) > new Date()
+      );
+      toast.error(
+        `You are the owner of squad "${ownedSquad?.name}" with a future registration date (${new Date(ownedSquad?.voter_registration_date).toLocaleDateString()}). You cannot join other squads until the registration date has passed or you reset your membership.`,
+        { duration: 6000 }
+      );
+      return;
+    }
+
+    if (hasJoinedSquad && userMembership?.squad?.id !== squadId) {
+      toast.error('You are already a member of another squad. Leave your current squad first.');
+      return;
+    }
+    joinSquadMutation.mutate(squadId);
   };
 
   // Clear membership mutation (for debugging and user-initiated reset)
@@ -60,11 +80,14 @@ const Dashboard = () => {
       // Force refetch the squads query immediately
       queryClient.refetchQueries({ queryKey: ['squads'] });
 
-      alert(`Membership cleared! You can now join or create squads fresh.`);
+      toast.success('Membership cleared! You can now join or create squads fresh.', {
+        icon: '🔄',
+        duration: 4000
+      });
     },
     onError: (error) => {
       console.error('Failed to clear membership:', error);
-      alert('Failed to clear membership: ' + (error.response?.data?.message || error.message));
+      toast.error('Failed to clear membership: ' + (error.response?.data?.message || error.message));
     },
   });
 
@@ -123,19 +146,6 @@ const Dashboard = () => {
   // Use mySquads if available, otherwise fall back to empty array
   const userMemberSquads = Array.isArray(mySquads) ? mySquads : (mySquads?.results ? mySquads.results : []);
 
-  // Debug logging for membership detection
-  // console.log('Dashboard Membership Debug:', {
-  //   userMembership: userMembership,
-  //   userMembershipSquadId: userMembership?.squad?.id,
-  //   userMembershipId: userMembership?.id,
-  //   userSquadsLength: userSquads.length,
-  //   userMemberSquadsLength: userMemberSquads.length,
-  //   userMemberSquadIds: userMemberSquads.map(s => s.id),
-  //   allSquadMemberCounts: userSquads.map(s => ({ id: s.id, name: s.name, members: s.member_count }))
-  // });
-
-  const nearbyCenters = centers || [];
-
   // Get the current squad for logic purposes - use the first squad from mySquads
   const userCurrentSquad = userMemberSquads.length > 0 ? userMemberSquads[0] : null;
   const userMembershipRole = userMembership?.role || 'member';
@@ -145,8 +155,42 @@ const Dashboard = () => {
     ? new Date(userCurrentSquad.voter_registration_date) > new Date()
     : false;
 
-  // User cannot create squad if they're in an active squad with future registration
-  const canCreateSquad = !hasJoinedSquad || !hasFutureRegistration;
+  const nearbyCenters = centers || [];
+
+  // Check if user is owner of any squad with future registration
+  const ownedSquads = userSquads.filter(squad => squad.owner === user?.phone_number);
+  const hasOwnedSquadWithFutureRegistration = ownedSquads.some(squad =>
+    squad.voter_registration_date && new Date(squad.voter_registration_date) > new Date()
+  );
+
+  // DEFINE MISSING VARIABLES:
+  // Check if user is owner of any squad
+  const isOwnerOfAnySquad = ownedSquads.length > 0;
+  
+  // User can create squad if they haven't joined any, or if they're an owner (owners can manage multiple squads)
+  const canCreateSquad = !hasJoinedSquad || isOwnerOfAnySquad || !hasFutureRegistration;
+
+  // Refresh data function with toast
+  const handleRefreshData = () => {
+    queryClient.invalidateQueries({ queryKey: ['squads'] });
+    queryClient.refetchQueries({ queryKey: ['squads'] });
+    toast.success('Data refreshed!', {
+      icon: '🔄',
+      duration: 2000
+    });
+  };
+
+  // Refresh squad data function with toast
+  const handleRefreshSquadData = () => {
+    queryClient.invalidateQueries({ queryKey: ['squads'] });
+    queryClient.invalidateQueries({ queryKey: ['my-squads'] });
+    queryClient.refetchQueries({ queryKey: ['squads'] });
+    queryClient.refetchQueries({ queryKey: ['my-squads'] });
+    toast.success('Squad data refreshed!', {
+      icon: '👥',
+      duration: 2000
+    });
+  };
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -165,41 +209,46 @@ const Dashboard = () => {
         </p>
 
         {/* Membership Status Info */}
-        {hasJoinedSquad && (
+        {(hasJoinedSquad || isOwnerOfAnySquad) && (
           <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="font-medium text-blue-900">Squad Membership Detected</h3>
+                <h3 className="font-medium text-blue-900">Squad Membership Status</h3>
                 <p className="text-sm text-blue-700 mt-1">
-                  You're currently a member of {userCurrentSquad?.name || 'a squad'}.
-                  {hasFutureRegistration && ' The registration date is in the future.'}
+                  {hasJoinedSquad
+                    ? `You're currently a member of ${userCurrentSquad?.name || 'a squad'}.${hasFutureRegistration ? ' The registration date is in the future.' : ''}`
+                    : 'You are the owner of one or more squads but not currently a member of any.'
+                  }
                 </p>
+                {hasOwnedSquadWithFutureRegistration && (
+                  <p className="text-xs text-orange-600 mt-1">
+                    As an owner with future registration dates, you cannot join other squads until the registration date passes.
+                  </p>
+                )}
                 <p className="text-xs text-blue-600 mt-1">
-                  If you recently cleared your membership and still see this, try refreshing the page.
+                  {isOwnerOfAnySquad && 'As an owner, you can always manage your squad membership.'}
                 </p>
               </div>
               <div className="flex space-x-2">
                 <Button
-                  onClick={() => {
-                    queryClient.invalidateQueries({ queryKey: ['squads'] });
-                    queryClient.refetchQueries({ queryKey: ['squads'] });
-                    alert('Data refreshed! Check if your membership status updated.');
-                  }}
+                  onClick={handleRefreshData}
                   variant="outline"
                   size="sm"
                   className="border-blue-300 text-blue-700 hover:bg-blue-50"
                 >
                   Refresh Data
                 </Button>
-                <Button
-                  onClick={() => clearMembershipMutation.mutate()}
-                  variant="outline"
-                  size="sm"
-                  className="border-red-300 text-red-700 hover:bg-red-50"
-                  disabled={clearMembershipMutation.isPending}
-                >
-                  {clearMembershipMutation.isPending ? 'Clearing...' : 'Reset Membership'}
-                </Button>
+                {(hasJoinedSquad || isOwnerOfAnySquad) && (
+                  <Button
+                    onClick={() => clearMembershipMutation.mutate()}
+                    variant="outline"
+                    size="sm"
+                    className="border-red-300 text-red-700 hover:bg-red-50"
+                    disabled={clearMembershipMutation.isPending}
+                  >
+                    {clearMembershipMutation.isPending ? 'Clearing...' : 'Reset Membership'}
+                  </Button>
+                )}
               </div>
             </div>
           </div>
@@ -280,13 +329,7 @@ const Dashboard = () => {
                 </div>
                 <div className="flex space-x-2">
                   <Button
-                    onClick={() => {
-                      queryClient.invalidateQueries({ queryKey: ['squads'] });
-                      queryClient.invalidateQueries({ queryKey: ['my-squads'] });
-                      queryClient.refetchQueries({ queryKey: ['squads'] });
-                      queryClient.refetchQueries({ queryKey: ['my-squads'] });
-                      alert('Data refreshed! Check if your squad appears.');
-                    }}
+                    onClick={handleRefreshSquadData}
                     variant="outline"
                     size="sm"
                     className="border-blue-300 text-blue-700 hover:bg-blue-50"
@@ -312,9 +355,9 @@ const Dashboard = () => {
                 key={squad.id}
                 squad={squad}
                 isCurrentUserSquad={userCurrentSquad?.id === squad.id}
-                onJoin={(squadId) => joinSquadMutation.mutate(squadId)}
+                onJoin={handleJoinSquadFromDashboard}
                 onLeave={() => {}}
-                showJoinButton={!hasJoinedSquad || squad.id !== userCurrentSquad?.id}
+                showJoinButton={!hasOwnedSquadWithFutureRegistration && (!hasJoinedSquad || squad.id !== userCurrentSquad?.id)}
                 currentUser={user}
               />
             ))}

@@ -4,6 +4,7 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.views import APIView
 from django.db.models import Count, Q
+from django.utils import timezone
 from .models import Squad, SquadMember
 from .serializers import (
     SquadSerializer, SquadCreateSerializer, SquadJoinSerializer,
@@ -44,6 +45,22 @@ class SquadViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
+        # Check if user is owner of any squad with future registration date
+        owned_squads = Squad.objects.filter(owner=request.user)
+        if owned_squads.exists():
+            for owned_squad in owned_squads:
+                if owned_squad.voter_registration_date:
+                    registration_date = owned_squad.voter_registration_date
+                    if registration_date > timezone.now().date():
+                        # Owner has a squad with future registration date
+                        return Response(
+                            {
+                                'error': f'You are the owner of squad "{owned_squad.name}" with a future registration date ({registration_date}). '
+                                        f'You cannot join other squads until the registration date has passed or you reset your membership.'
+                            },
+                            status=status.HTTP_400_BAD_REQUEST
+                        )
+
         # If user is the owner, they don't need to join - they're already the leader
         if squad.owner == request.user:
             return Response(
@@ -71,12 +88,37 @@ class SquadViewSet(viewsets.ModelViewSet):
 
         try:
             membership = SquadMember.objects.get(squad=squad, user=user)
-            if membership.role == 'leader' and squad.members.filter(role='leader').count() == 1:
+
+            # If user is the owner, they can always leave
+            # Transfer ownership to another leader or delete the squad if no other leaders
+            if squad.owner == user:
+                # Find another leader to transfer ownership to
+                other_leaders = squad.members.filter(role='leader').exclude(user=user)
+                if other_leaders.exists():
+                    # Transfer ownership to the first other leader
+                    new_owner = other_leaders.first().user
+                    squad.owner = new_owner
+                    squad.save()
+
+                    # Demote the old owner to regular member if they were a leader
+                    if membership.role == 'leader':
+                        membership.role = 'member'
+                        membership.save()
+                else:
+                    # No other leaders, delete the squad
+                    squad.delete()
+                    return Response({
+                        'message': 'You were the owner and only leader. Squad has been deleted.'
+                    })
+
+            # If user is a regular leader and the only leader, prevent leaving
+            elif membership.role == 'leader' and squad.members.filter(role='leader').count() == 1:
                 return Response(
                     {'error': 'Cannot leave squad. You are the only leader.'},
                     status=status.HTTP_400_BAD_REQUEST
                 )
 
+            # Delete the membership
             membership.delete()
             return Response({'message': 'Successfully left the squad'})
 
@@ -111,7 +153,34 @@ class SquadViewSet(viewsets.ModelViewSet):
     def clear_membership(self, request):
         """Clear user's squad membership (for debugging/testing)"""
         user = request.user
-        deleted_count, _ = SquadMember.objects.filter(user=user).delete()
+
+        # Get user's memberships before deletion for proper handling
+        memberships = SquadMember.objects.filter(user=user).select_related('squad')
+
+        # Check if user is an owner of any squads
+        owned_squads = Squad.objects.filter(owner=user)
+
+        deleted_count = 0
+
+        # Handle owned squads first - transfer ownership or delete
+        for membership in memberships:
+            if membership.squad.owner == user:
+                # User is owner of this squad
+                other_leaders = membership.squad.members.filter(role='leader').exclude(user=user)
+                if other_leaders.exists():
+                    # Transfer ownership to another leader
+                    new_owner = other_leaders.first().user
+                    membership.squad.owner = new_owner
+                    membership.squad.save()
+                else:
+                    # No other leaders, delete the squad
+                    membership.squad.delete()
+                    continue  # Skip deleting the membership since squad is deleted
+
+            # Delete the membership
+            membership.delete()
+            deleted_count += 1
+
         return Response({
             'message': f'Cleared {deleted_count} membership(s)',
             'user': str(user)

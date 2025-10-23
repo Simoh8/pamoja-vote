@@ -79,13 +79,22 @@ export const usePollingCenters = (options = {}) => {
     }
 
     const totalCount = filteredFeatures.length;
-    const start = startIndex * chunkSize;
-    const end = start + chunkSize;
-    const chunkFeatures = filteredFeatures.slice(start, end);
+
+    // If no pagination (enablePagination = false), return all centers
+    let chunkFeatures;
+    if (!enablePagination) {
+      chunkFeatures = filteredFeatures; // Return all filtered features
+      console.log(`Returning ${chunkFeatures.length} centers (no pagination)`);
+    } else {
+      const start = startIndex * chunkSize;
+      const end = Math.min(start + chunkSize, filteredFeatures.length);
+      chunkFeatures = filteredFeatures.slice(start, end);
+      console.log(`Returning ${chunkFeatures.length} centers (pagination: ${start}-${end})`);
+    }
 
     const centers = chunkFeatures.map((feature, index) => {
       const props = feature.properties || {};
-      const globalIndex = start + index;
+      const globalIndex = enablePagination ? (startIndex * chunkSize) + index : index;
 
       return {
         id: `center-${globalIndex}`,
@@ -109,7 +118,8 @@ export const usePollingCenters = (options = {}) => {
     if (enablePagination) {
       return transformToCenters(rawData, currentChunk, pageSize);
     } else {
-      return transformToCenters(rawData);
+      // When pagination is disabled, return all centers with filters applied
+      return transformToCenters(rawData, 0, Number.MAX_SAFE_INTEGER);
     }
   }, [rawData, currentChunk, pageSize, searchTerm, selectedCounty, enablePagination]);
 

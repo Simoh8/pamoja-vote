@@ -206,6 +206,18 @@ const SquadCard = ({
             )}
           </div>
         )}
+
+        {/* Show disabled state message for owners with future registration */}
+        {!showJoinButton && !isUserMember && isOwner && (
+          <div className="p-6 pt-0">
+            <div className="w-full p-3 bg-orange-50 border border-orange-200 rounded-lg text-center">
+              <p className="text-xs text-orange-700">
+                You are the owner of a squad with a future registration date.
+                You cannot join other squads until the registration date passes.
+              </p>
+            </div>
+          </div>
+        )}
       </Card>
     </motion.div>
   );

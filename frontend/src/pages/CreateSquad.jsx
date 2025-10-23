@@ -66,6 +66,19 @@ const CreateSquad = () => {
     (c) => c.id === formData.registration_center
   );
 
+  // Debug logging
+  useEffect(() => {
+    console.log('CreateSquad Debug:', {
+      centersLength: centers?.length || 0,
+      centersError: centersError?.message,
+      centersLoading,
+      filteredCentersLength: filteredCenters?.length || 0,
+      centerSearchTerm,
+      selectedCenterId: formData.registration_center,
+      selectedCenter
+    });
+  }, [centers, centersError, centersLoading, filteredCenters, centerSearchTerm, formData.registration_center, selectedCenter]);
+
   const kenyaCounties = [
     "Baringo", "Bomet", "Bungoma", "Busia", "Elgeyo-Marakwet", "Embu",
     "Garissa", "Homa Bay", "Isiolo", "Kajiado", "Kakamega", "Kericho",
@@ -336,7 +349,7 @@ const CreateSquad = () => {
           {centersError && (
             <Alert
               type="warning"
-              message="Unable to load registration centers. You can still create a squad manually."
+              message={`Unable to load registration centers: ${centersError.message}. You can still create a squad by selecting a county manually.`}
             />
           )}
 
@@ -407,8 +420,10 @@ const CreateSquad = () => {
                   ) : filteredCenters.length === 0 ? (
                     <div className="px-3 py-2 text-sm text-gray-500">
                       {centerSearchTerm
-                        ? "No centers found. Try a different search term."
-                        : "Start typing to search for registration centers..."}
+                        ? `No centers found for "${centerSearchTerm}". Try a different search term.`
+                        : centers.length === 0
+                          ? "No registration centers are available. Please select a county manually."
+                          : "Start typing to search for registration centers..."}
                     </div>
                   ) : (
                     filteredCenters.slice(0, 10).map((center) => (

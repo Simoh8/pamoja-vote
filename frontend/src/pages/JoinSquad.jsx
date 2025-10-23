@@ -113,8 +113,11 @@ const JoinSquad = () => {
     ? new Date(userSquadData.voter_registration_date) > new Date()
     : false;
 
-  // User cannot create squad if they're in an active squad with future registration
-  const canCreateSquad = !hasJoinedSquad || !hasFutureRegistration;
+  // Check if user is owner of any squad with future registration
+  const ownedSquads = squads.filter(squad => squad.owner === user?.phone_number);
+  const hasOwnedSquadWithFutureRegistration = ownedSquads.some(squad =>
+    squad.voter_registration_date && new Date(squad.voter_registration_date) > new Date()
+  );
 
   const handleLeaveSquad = (squadId) => {
     if (confirm('Are you sure you want to leave this squad?')) {
@@ -123,6 +126,15 @@ const JoinSquad = () => {
   };
 
   const handleJoinSquad = (squadId) => {
+    // Check if user is owner of any squad with future registration
+    if (hasOwnedSquadWithFutureRegistration) {
+      const ownedSquad = ownedSquads.find(squad =>
+        squad.voter_registration_date && new Date(squad.voter_registration_date) > new Date()
+      );
+      setError(`You are the owner of squad "${ownedSquad?.name}" with a future registration date (${new Date(ownedSquad?.voter_registration_date).toLocaleDateString()}). You cannot join other squads until the registration date has passed or you reset your membership.`);
+      return;
+    }
+
     if (isAlreadyInSquad && userMembership?.squad?.id !== squadId) {
       setError('You are already a member of another squad. Leave your current squad first.');
       return;
@@ -190,13 +202,20 @@ const JoinSquad = () => {
           />
         )}
 
-        {squadsError && (
-          <Alert
-            type="warning"
-            message="Unable to load squads. Please try again later."
-            onDismiss={() => {}}
+        {/* Owner Restriction Warning */}
+        {hasOwnedSquadWithFutureRegistration && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
             className="mb-6"
-          />
+          >
+            <Alert
+              type="warning"
+              message={`You are the owner of squad "${ownedSquads.find(squad => squad.voter_registration_date && new Date(squad.voter_registration_date) > new Date())?.name}" with a future registration date. You cannot join other squads until the registration date has passed or you reset your membership.`}
+              onDismiss={() => {}}
+              className="mb-6"
+            />
+          </motion.div>
         )}
 
         {/* Current Squad Section */}
@@ -323,7 +342,9 @@ const JoinSquad = () => {
                         ? 'Try adjusting your search or filter criteria to find more squads in your area.'
                         : hasJoinedSquad && hasFutureRegistration
                           ? 'You\'re already part of an active squad. Wait for the registration date or leave your current squad to create a new one.'
-                          : 'Ready to make your voice heard? Join a squad and team up with friends to organize voter registration drives and awareness campaigns.'}
+                          : hasOwnedSquadWithFutureRegistration
+                            ? 'You are the owner of a squad with a future registration date. You cannot join other squads until the registration date passes or you reset your membership.'
+                            : 'Ready to make your voice heard? Join a squad and team up with friends to organize voter registration drives and awareness campaigns.'}
                     </p>
                   </div>
 
@@ -344,7 +365,9 @@ const JoinSquad = () => {
                     <p className="text-sm text-gray-500 mt-3">
                       {canCreateSquad
                         ? 'Join thousands of leaders making their voices heard'
-                        : 'Focus on your current squad or wait for registration to complete'}
+                        : hasOwnedSquadWithFutureRegistration
+                          ? 'Wait for your squad\'s registration date or reset your membership to join other squads'
+                          : 'Focus on your current squad or wait for registration to complete'}
                     </p>
                   </div>
                 </div>
@@ -361,7 +384,7 @@ const JoinSquad = () => {
                     onJoin={handleJoinSquad}
                     onLeave={handleLeaveSquad}
                     isJoining={joinSquadMutation.isPending}
-                    showJoinButton={true}
+                    showJoinButton={!hasOwnedSquadWithFutureRegistration && !isAlreadyInSquad}
                     currentUser={user}
                   />
                 ))}
