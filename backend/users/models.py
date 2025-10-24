@@ -36,7 +36,7 @@ class User(AbstractUser):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     phone_number = models.CharField(max_length=15, unique=True)
     county = models.CharField(max_length=50, blank=True, null=True)
-    profile_pic = models.URLField(blank=True, null=True)
+    profile_pic = models.CharField(max_length=255, blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     # Remove username field since we're using phone_number as the unique identifier

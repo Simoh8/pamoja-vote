@@ -142,6 +142,20 @@ class ProfileView(generics.RetrieveUpdateAPIView):
             return UserSerializer
         return UserUpdateSerializer
 
+    def update(self, request, *args, **kwargs):
+        """Handle profile update and return complete user data"""
+        partial = kwargs.pop('partial', False)
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+
+        # Save the updated instance
+        self.perform_update(serializer)
+
+        # Return complete user data using UserSerializer
+        complete_serializer = UserSerializer(instance)
+        return Response(complete_serializer.data)
+
 
 class LogoutView(APIView):
     """Logout user (blacklist refresh token)"""
