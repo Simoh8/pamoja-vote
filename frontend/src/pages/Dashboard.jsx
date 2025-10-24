@@ -180,16 +180,15 @@ const Dashboard = () => {
     });
   };
 
-  // Refresh squad data function with toast
-  const handleRefreshSquadData = () => {
-    queryClient.invalidateQueries({ queryKey: ['squads'] });
-    queryClient.invalidateQueries({ queryKey: ['my-squads'] });
-    queryClient.refetchQueries({ queryKey: ['squads'] });
-    queryClient.refetchQueries({ queryKey: ['my-squads'] });
-    toast.success('Squad data refreshed!', {
-      icon: '👥',
-      duration: 2000
-    });
+  const handleSquadCardClick = (squad) => {
+    // Check if current user is the owner of this squad
+    const isOwner = squad.owner_id === user?.id;
+    const isMember = userCurrentSquad?.id === squad.id;
+
+    if (isOwner || isMember) {
+      // Navigate to squad management
+      navigate('/squad');
+    }
   };
 
   return (
@@ -357,6 +356,7 @@ const Dashboard = () => {
                 isCurrentUserSquad={userCurrentSquad?.id === squad.id}
                 onJoin={handleJoinSquadFromDashboard}
                 onLeave={() => {}}
+                onClick={handleSquadCardClick}
                 showJoinButton={!hasOwnedSquadWithFutureRegistration && (!hasJoinedSquad || squad.id !== userCurrentSquad?.id)}
                 currentUser={user}
               />

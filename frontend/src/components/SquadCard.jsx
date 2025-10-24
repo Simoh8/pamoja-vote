@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Users, MapPin, Calendar, UserPlus, Clock, Star, Crown } from 'lucide-react';
+import { Users, MapPin, Calendar, UserPlus, Clock, Star, Crown, Eye } from 'lucide-react';
 import { Button } from './ui';
 import Card from './Card';
 
@@ -8,6 +8,7 @@ const SquadCard = ({
   isCurrentUserSquad = false,
   onJoin = () => {},
   onLeave = () => {},
+  onClick = null,
   isJoining = false,
   showJoinButton = true,
   className = "",
@@ -64,11 +65,11 @@ const SquadCard = ({
   const getButtonContent = () => {
     if (isUserMember) {
       return {
-        text: "Already a Member",
-        variant: "secondary",
-        icon: Users,
-        disabled: true,
-        onClick: undefined
+        text: isOwner ? "Manage Squad" : "View Squad",
+        variant: isOwner ? "default" : "outline",
+        icon: isOwner ? Users : Users,
+        disabled: false,
+        onClick: onClick ? () => onClick(squad) : undefined
       };
     }
 
@@ -91,17 +92,32 @@ const SquadCard = ({
     };
   };
 
+  // Check if this card should be clickable
+  const isClickable = onClick && (isOwner || isUserMember);
+  const cardClassName = `${isClickable ? 'cursor-pointer' : ''} ${className}`;
+
+  const handleCardClick = (e) => {
+    // Don't trigger if clicking on buttons or other interactive elements
+    if (e.target.tagName === 'BUTTON' || e.target.closest('button')) {
+      return;
+    }
+    if (isClickable && onClick) {
+      onClick(squad);
+    }
+  };
+
   const buttonContent = getButtonContent();
 
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.9 }}
       animate={{ opacity: 1, scale: 1 }}
-      whileHover={{ scale: 1.02 }}
+      whileHover={{ scale: isClickable ? 1.02 : 1.01 }}
       transition={{ duration: 0.2 }}
-      className={className}
+      className={cardClassName}
+      onClick={handleCardClick}
     >
-      <Card className="h-full flex flex-col">
+      <Card className={`h-full flex flex-col ${isClickable ? 'ring-2 ring-blue-200 hover:ring-blue-300' : ''} transition-all duration-200`}>
         <div className="p-6 flex-1">
           <div className="flex items-start justify-between mb-4">
             <div className="flex items-center space-x-2">
@@ -127,6 +143,13 @@ const SquadCard = ({
                 <div className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white px-4 py-2.5 rounded-full text-sm font-bold shadow-xl border-2 border-white flex items-center space-x-2 animate-bounce">
                   <Star className="w-4 h-4 fill-current" />
                   <span>You're a Member</span>
+                </div>
+              )}
+              {/* Click indicator for clickable cards */}
+              {isClickable && (
+                <div className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-xs font-medium flex items-center space-x-1 opacity-75">
+                  <Eye className="w-3 h-3" />
+                  <span>{isOwner ? 'Manage' : 'View'}</span>
                 </div>
               )}
             </div>
@@ -204,6 +227,23 @@ const SquadCard = ({
                 Registration available from {new Date(squad?.voter_registration_date).toLocaleDateString()}
               </p>
             )}
+          </div>
+        )}
+
+        {/* Show management/view button for members when card is clickable */}
+        {isUserMember && isClickable && (
+          <div className="p-6 pt-0">
+            <Button
+              onClick={(e) => {
+                e.stopPropagation();
+                buttonContent.onClick();
+              }}
+              className="w-full"
+              variant={buttonContent.variant}
+            >
+              <buttonContent.icon className="h-4 w-4 mr-2" />
+              {buttonContent.text}
+            </Button>
           </div>
         )}
 

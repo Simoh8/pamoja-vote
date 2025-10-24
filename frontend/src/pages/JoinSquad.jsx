@@ -114,14 +114,26 @@ const JoinSquad = () => {
     : false;
 
   // Check if user is owner of any squad with future registration
-  const ownedSquads = squads.filter(squad => squad.owner === user?.phone_number);
+  const ownedSquads = squads.filter(squad => squad.owner_id === user?.id);
   const hasOwnedSquadWithFutureRegistration = ownedSquads.some(squad =>
     squad.voter_registration_date && new Date(squad.voter_registration_date) > new Date()
   );
 
-  const handleLeaveSquad = (squadId) => {
-    if (confirm('Are you sure you want to leave this squad?')) {
-      leaveSquadMutation.mutate(squadId);
+  const handleSquadCardClick = (squad) => {
+    // Check if current user is the owner of this squad
+    const isOwner = squad.owner_id === user?.id;
+    const isMember = isAlreadyInSquad && userMembership?.squad?.id === squad.id;
+
+    if (isOwner) {
+      // Navigate to squad management if user is the owner
+      navigate('/squad');
+    } else if (isMember) {
+      // Navigate to squad management if user is a member
+      navigate('/squad');
+    } else {
+      // For non-members, just show the squad details (could be enhanced later)
+      // For now, do nothing or show a toast
+      console.log('View squad details:', squad.name);
     }
   };
 
@@ -383,6 +395,7 @@ const JoinSquad = () => {
                     isCurrentUserSquad={isAlreadyInSquad && userMembership?.squad?.id === squad.id}
                     onJoin={handleJoinSquad}
                     onLeave={handleLeaveSquad}
+                    onClick={handleSquadCardClick}
                     isJoining={joinSquadMutation.isPending}
                     showJoinButton={!hasOwnedSquadWithFutureRegistration && !isAlreadyInSquad}
                     currentUser={user}
