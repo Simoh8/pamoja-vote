@@ -231,7 +231,22 @@ class SquadViewSet(viewsets.ModelViewSet):
         if county:
             squads = squads.filter(county=county)
 
-        serializer = SquadLeaderboardSerializer(squads, many=True)
+    @action(detail=True, methods=['get'])
+    def members(self, request, pk=None):
+        """Get members of a specific squad"""
+        squad = self.get_object()
+
+        # Check if user has permission to view this squad's members
+        if not squad.is_public and squad.owner != request.user:
+            # Check if user is a member of this squad
+            if not squad.members.filter(user=request.user).exists():
+                return Response(
+                    {'error': 'You do not have permission to view this squad\'s members'},
+                    status=status.HTTP_403_FORBIDDEN
+                )
+
+        members = squad.members.all()
+        serializer = SquadMemberSerializer(members, many=True, context={'request': request})
         return Response(serializer.data)
 
 
