@@ -24,6 +24,7 @@ import Navbar from './components/Navbar';
 import BottomNav from './components/BottomNav';
 import PrivateRoute from './components/PrivateRoute';
 import Loading from './components/Loading';
+import ErrorBoundary from './components/ErrorBoundary';
 
 // Create a client
 const queryClient = new QueryClient({
@@ -36,6 +37,10 @@ const queryClient = new QueryClient({
         if (error?.response?.status >= 400 && error?.response?.status < 500) {
           return false;
         }
+        // Don't retry on network errors
+        if (error?.isNetworkError) {
+          return false;
+        }
         return failureCount < 3;
       },
     },
@@ -44,156 +49,158 @@ const queryClient = new QueryClient({
 
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <Router>
-          <div className="min-h-screen bg-gray-50">
-            <AnimatePresence mode="wait">
-              <Routes>
-                {/* Public routes */}
-                <Route path="/login" element={<Login />} />
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>
+          <Router>
+            <div className="min-h-screen bg-gray-50">
+              <AnimatePresence mode="wait">
+                <Routes>
+                  {/* Public routes */}
+                  <Route path="/login" element={<Login />} />
 
-                {/* Dashboard redirect for /dashboard URL */}
-                <Route path="/dashboard" element={<Navigate to="/" replace />} />
+                  {/* Dashboard redirect for /dashboard URL */}
+                  <Route path="/dashboard" element={<Navigate to="/" replace />} />
 
-                {/* Protected routes */}
-                <Route
-                  path="/"
-                  element={
-                    <PrivateRoute>
+                  {/* Protected routes */}
+                  <Route
+                    path="/"
+                    element={
+                      <PrivateRoute>
+                        <div className="pb-16">
+                          <Navbar />
+                          <Dashboard />
+                        </div>
+                      </PrivateRoute>
+                    }
+                  />
+
+                  <Route
+                    path="/squad"
+                    element={
+                      <PrivateRoute>
+                        <div className="pb-16">
+                          <Navbar />
+                          <Squad />
+                        </div>
+                      </PrivateRoute>
+                    }
+                  />
+
+                  <Route
+                    path="/join-squad"
+                    element={
+                      <PrivateRoute>
+                        <div className="pb-16">
+                          <Navbar />
+                          <JoinSquad />
+                        </div>
+                      </PrivateRoute>
+                    }
+                  />
+
+                  <Route
+                    path="/squad/create"
+                    element={
+                      <PrivateRoute>
+                        <div className="pb-16">
+                          <Navbar />
+                          <CreateSquad />
+                        </div>
+                      </PrivateRoute>
+                    }
+                  />
+
+                  <Route
+                    path="/centers"
+                    element={
+                      <PrivateRoute>
+                        <div className="pb-16">
+                          <Navbar />
+                          <Centers />
+                        </div>
+                      </PrivateRoute>
+                    }
+                  />
+
+                  <Route
+                    path="/find-centers"
+                    element={
                       <div className="pb-16">
                         <Navbar />
-                        <Dashboard />
+                        <FindCenters />
                       </div>
-                    </PrivateRoute>
-                  }
-                />
+                    }
+                  />
 
-                <Route
-                  path="/squad"
-                  element={
-                    <PrivateRoute>
-                      <div className="pb-16">
-                        <Navbar />
-                        <Squad />
-                      </div>
-                    </PrivateRoute>
-                  }
-                />
+                  <Route
+                    path="/event/create"
+                    element={
+                      <PrivateRoute>
+                        <div className="pb-16">
+                          <Navbar />
+                          <CreateEvent />
+                        </div>
+                      </PrivateRoute>
+                    }
+                  />
 
-                <Route
-                  path="/join-squad"
-                  element={
-                    <PrivateRoute>
-                      <div className="pb-16">
-                        <Navbar />
-                        <JoinSquad />
-                      </div>
-                    </PrivateRoute>
-                  }
-                />
+                  <Route
+                    path="/leaderboard"
+                    element={
+                      <PrivateRoute>
+                        <div className="pb-16">
+                          <Navbar />
+                          <Leaderboard />
+                        </div>
+                      </PrivateRoute>
+                    }
+                  />
 
-                <Route
-                  path="/squad/create"
-                  element={
-                    <PrivateRoute>
-                      <div className="pb-16">
-                        <Navbar />
-                        <CreateSquad />
-                      </div>
-                    </PrivateRoute>
-                  }
-                />
+                  <Route
+                    path="/profile"
+                    element={
+                      <PrivateRoute>
+                        <div className="pb-16">
+                          <Navbar />
+                          <Profile />
+                        </div>
+                      </PrivateRoute>
+                    }
+                  />
 
-                <Route
-                  path="/centers"
-                  element={
-                    <PrivateRoute>
-                      <div className="pb-16">
-                        <Navbar />
-                        <Centers />
-                      </div>
-                    </PrivateRoute>
-                  }
-                />
+                  {/* 404 page */}
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </AnimatePresence>
 
-                <Route
-                  path="/find-centers"
-                  element={
-                    <div className="pb-16">
-                      <Navbar />
-                      <FindCenters />
-                    </div>
-                  }
-                />
+              {/* Bottom navigation for mobile */}
+              <BottomNav />
 
-                <Route
-                  path="/event/create"
-                  element={
-                    <PrivateRoute>
-                      <div className="pb-16">
-                        <Navbar />
-                        <CreateEvent />
-                      </div>
-                    </PrivateRoute>
-                  }
-                />
+              {/* Toast Container */}
+              <ToastContainer
+                position="top-right"
+                autoClose={5000}
+                hideProgressBar={false}
+                newestOnTop={false}
+                closeOnClick
+                rtl={false}
+                pauseOnFocusLoss
+                draggable
+                pauseOnHover
+                theme="light"
+                style={{
+                  zIndex: 9999,
+                }}
+              />
+            </div>
+          </Router>
 
-                <Route
-                  path="/leaderboard"
-                  element={
-                    <PrivateRoute>
-                      <div className="pb-16">
-                        <Navbar />
-                        <Leaderboard />
-                      </div>
-                    </PrivateRoute>
-                  }
-                />
-
-                <Route
-                  path="/profile"
-                  element={
-                    <PrivateRoute>
-                      <div className="pb-16">
-                        <Navbar />
-                        <Profile />
-                      </div>
-                    </PrivateRoute>
-                  }
-                />
-
-                {/* 404 page */}
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </AnimatePresence>
-
-            {/* Bottom navigation for mobile */}
-            <BottomNav />
-
-            {/* Toast Container */}
-            <ToastContainer
-              position="top-right"
-              autoClose={5000}
-              hideProgressBar={false}
-              newestOnTop={false}
-              closeOnClick
-              rtl={false}
-              pauseOnFocusLoss
-              draggable
-              pauseOnHover
-              theme="light"
-              style={{
-                zIndex: 9999,
-              }}
-            />
-          </div>
-        </Router>
-
-        {/* React Query DevTools (only in development) */}
-        {import.meta.env.DEV && <ReactQueryDevtools initialIsOpen={false} />}
-      </AuthProvider>
-    </QueryClientProvider>
+          {/* React Query DevTools (only in development) */}
+          {import.meta.env.DEV && <ReactQueryDevtools initialIsOpen={false} />}
+        </AuthProvider>
+      </QueryClientProvider>
+    </ErrorBoundary>
   );
 }
 

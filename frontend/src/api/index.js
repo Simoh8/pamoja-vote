@@ -102,6 +102,40 @@ class ApiClient {
     if (error.response) {
       // Handle DRF validation errors in non_field_errors format
       const data = error.response.data || {};
+      const status = error.response.status;
+
+      // Special handling for 404 errors
+      if (status === 404) {
+        return {
+          message: data.detail || data.message || 'The requested resource was not found',
+          status: 404,
+          errors: data.errors || data,
+          response: error.response,
+          isNotFound: true,
+        };
+      }
+
+      // Special handling for 403 errors
+      if (status === 403) {
+        return {
+          message: data.detail || data.message || 'You do not have permission to access this resource',
+          status: 403,
+          errors: data.errors || data,
+          response: error.response,
+          isForbidden: true,
+        };
+      }
+
+      // Special handling for 422 errors (validation errors)
+      if (status === 422) {
+        return {
+          message: data.detail || data.message || 'The submitted data is invalid',
+          status: 422,
+          errors: data.errors || data,
+          response: error.response,
+          isValidationError: true,
+        };
+      }
 
       return {
         message: data.non_field_errors?.[0] ||
@@ -109,7 +143,7 @@ class ApiClient {
                 data.message ||
                 data.error ||
                 'An error occurred',
-        status: error.response.status,
+        status: status,
         errors: data.errors || data,
         response: error.response,
       };
@@ -120,6 +154,7 @@ class ApiClient {
         message: 'Network error - please check your connection',
         status: 0,
         response: error.response,
+        isNetworkError: true,
       };
     }
 
@@ -127,6 +162,7 @@ class ApiClient {
       message: error.message || 'Unknown error occurred',
       status: 0,
       response: error.response,
+      isUnknownError: true,
     };
   }
 
