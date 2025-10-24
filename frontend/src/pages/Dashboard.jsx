@@ -158,7 +158,7 @@ const Dashboard = () => {
   const nearbyCenters = centers || [];
 
   // Check if user is owner of any squad with future registration
-  const ownedSquads = userSquads.filter(squad => squad.owner === user?.phone_number);
+  const ownedSquads = userSquads.filter(squad => squad.owner_id === user?.id);
   const hasOwnedSquadWithFutureRegistration = ownedSquads.some(squad =>
     squad.voter_registration_date && new Date(squad.voter_registration_date) > new Date()
   );

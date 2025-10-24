@@ -2,14 +2,15 @@ from rest_framework import status, generics, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
-from rest_framework.views import APIView
 from django.db.models import Count, Q
 from django.utils import timezone
 from .models import Squad, SquadMember
 from .serializers import (
     SquadSerializer, SquadCreateSerializer, SquadJoinSerializer,
-    SquadLeaderboardSerializer, SquadMemberSerializer
+    SquadLeaderboardSerializer, SquadMemberSerializer, SquadAnnouncementSerializer
 )
+from invites.models import Invite
+from invites.serializers import InviteSerializer
 
 
 class SquadViewSet(viewsets.ModelViewSet):
@@ -19,7 +20,6 @@ class SquadViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        # Users can see public squads and squads they're members of
         return Squad.objects.filter(
             Q(is_public=True) | Q(owner=user) | Q(members__user=user)
         ).distinct().prefetch_related('members')
@@ -37,7 +37,6 @@ class SquadViewSet(viewsets.ModelViewSet):
         """Join a squad"""
         squad = self.get_object()
 
-        # Check if user is already a member of another squad (but allow joining their own squad)
         existing_membership = SquadMember.objects.filter(user=request.user).first()
         if existing_membership and existing_membership.squad != squad:
             return Response(
@@ -45,14 +44,12 @@ class SquadViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        # Check if user is owner of any squad with future registration date
         owned_squads = Squad.objects.filter(owner=request.user)
         if owned_squads.exists():
             for owned_squad in owned_squads:
                 if owned_squad.voter_registration_date:
                     registration_date = owned_squad.voter_registration_date
                     if registration_date > timezone.now().date():
-                        # Owner has a squad with future registration date
                         return Response(
                             {
                                 'error': f'You are the owner of squad "{owned_squad.name}" with a future registration date ({registration_date}). '
@@ -61,7 +58,6 @@ class SquadViewSet(viewsets.ModelViewSet):
                             status=status.HTTP_400_BAD_REQUEST
                         )
 
-        # If user is the owner, they don't need to join - they're already the leader
         if squad.owner == request.user:
             return Response(
                 {'error': 'You are the owner of this squad and cannot join it as a member.'},
@@ -71,7 +67,6 @@ class SquadViewSet(viewsets.ModelViewSet):
         serializer = SquadJoinSerializer(data={'squad_id': pk}, context={'request': request})
         serializer.is_valid(raise_exception=True)
 
-        # Override squad_id with the URL parameter
         serializer.validated_data['squad_id'] = pk
         membership = serializer.save()
 
@@ -89,36 +84,28 @@ class SquadViewSet(viewsets.ModelViewSet):
         try:
             membership = SquadMember.objects.get(squad=squad, user=user)
 
-            # If user is the owner, they can always leave
-            # Transfer ownership to another leader or delete the squad if no other leaders
             if squad.owner == user:
-                # Find another leader to transfer ownership to
                 other_leaders = squad.members.filter(role='leader').exclude(user=user)
                 if other_leaders.exists():
-                    # Transfer ownership to the first other leader
                     new_owner = other_leaders.first().user
                     squad.owner = new_owner
                     squad.save()
 
-                    # Demote the old owner to regular member if they were a leader
                     if membership.role == 'leader':
                         membership.role = 'member'
                         membership.save()
                 else:
-                    # No other leaders, delete the squad
                     squad.delete()
                     return Response({
                         'message': 'You were the owner and only leader. Squad has been deleted.'
                     })
 
-            # If user is a regular leader and the only leader, prevent leaving
             elif membership.role == 'leader' and squad.members.filter(role='leader').count() == 1:
                 return Response(
                     {'error': 'Cannot leave squad. You are the only leader.'},
                     status=status.HTTP_400_BAD_REQUEST
                 )
 
-            # Delete the membership
             membership.delete()
             return Response({'message': 'Successfully left the squad'})
 
@@ -127,6 +114,49 @@ class SquadViewSet(viewsets.ModelViewSet):
                 {'error': 'You are not a member of this squad'},
                 status=status.HTTP_400_BAD_REQUEST
             )
+
+    @action(detail=True, methods=['post'])
+    def send_announcement(self, request, pk=None):
+        """Send announcement to squad members (only owners can do this)"""
+        squad = self.get_object()
+
+        if squad.owner != request.user:
+            return Response(
+                {'error': 'Only the squad owner can send announcements'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        serializer = SquadAnnouncementSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        message = serializer.validated_data['message']
+
+        members = squad.members.exclude(user=request.user)
+
+        if not members.exists():
+            return Response(
+                {'message': 'No members to send announcement to'},
+                status=status.HTTP_200_OK
+            )
+
+        invites = []
+        base_url = "https://pamoja.vote"
+
+        for member in members:
+            invite_message = f"📢 SQUAD ANNOUNCEMENT from '{squad.name}':\n\n{message}\n\n🏛️ Stay registered to vote! {base_url}"
+            invite = Invite.objects.create(
+                squad=squad,
+                inviter=request.user,
+                invitee_contact=member.user.phone_number,
+                channel='sms',
+                message=invite_message
+            )
+            invites.append(invite)
+
+        return Response({
+            'message': f'Announcement sent to {len(invites)} squad members',
+            'recipients_count': len(invites)
+        }, status=status.HTTP_200_OK)
 
     @action(detail=False, methods=['get'])
     def my_squads(self, request):
@@ -145,39 +175,40 @@ class SquadViewSet(viewsets.ModelViewSet):
         membership = SquadMember.objects.filter(user=user).select_related('squad').first()
 
         if membership:
-            serializer = SquadMemberSerializer(membership)
-            return Response(serializer.data)
+            # Set context to avoid circular references
+            request.avoid_circular_refs = True
+            serializer = SquadSerializer(membership.squad, context={'request': request})
+            squad_data = serializer.data
+
+            # Add membership data to the response
+            membership_serializer = SquadMemberSerializer(membership)
+            membership_data = membership_serializer.data
+
+            return Response({
+                **membership_data,
+                'squad': squad_data
+            })
         return Response({'message': 'Not a member of any squad'})
 
     @action(detail=False, methods=['delete'])
     def clear_membership(self, request):
         """Clear user's squad membership (for debugging/testing)"""
         user = request.user
-
-        # Get user's memberships before deletion for proper handling
         memberships = SquadMember.objects.filter(user=user).select_related('squad')
-
-        # Check if user is an owner of any squads
         owned_squads = Squad.objects.filter(owner=user)
-
         deleted_count = 0
 
-        # Handle owned squads first - transfer ownership or delete
         for membership in memberships:
             if membership.squad.owner == user:
-                # User is owner of this squad
                 other_leaders = membership.squad.members.filter(role='leader').exclude(user=user)
                 if other_leaders.exists():
-                    # Transfer ownership to another leader
                     new_owner = other_leaders.first().user
                     membership.squad.owner = new_owner
                     membership.squad.save()
                 else:
-                    # No other leaders, delete the squad
                     membership.squad.delete()
-                    continue  # Skip deleting the membership since squad is deleted
+                    continue
 
-            # Delete the membership
             membership.delete()
             deleted_count += 1
 
@@ -225,7 +256,6 @@ class SquadMemberViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        # Check if user has permission to change roles
         if membership.squad.owner != request.user and membership.role != 'leader':
             return Response(
                 {'error': 'You do not have permission to change roles'},
@@ -240,7 +270,6 @@ class SquadMemberViewSet(viewsets.ModelViewSet):
         """Update registration status for a squad member"""
         membership = self.get_object()
 
-        # Only allow members to update their own registration status
         if membership.user != request.user:
             return Response(
                 {'error': 'You can only update your own registration status'},

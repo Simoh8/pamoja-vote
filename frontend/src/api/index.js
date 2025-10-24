@@ -237,9 +237,9 @@ export const squadAPI = {
   getSquadMembers: (squadId) =>
     apiClient.get(`/squads/${squadId}/members/`),
 
-  // Send message to squad members
-  sendSquadMessage: (squadId, data) =>
-    apiClient.post(`/squads/${squadId}/message/`, data),
+  // Send announcement to squad members
+  sendAnnouncement: (squadId, data) =>
+    apiClient.post(`/squads/${squadId}/send_announcement/`, data),
 };
 
 export const centerAPI = {

@@ -21,7 +21,7 @@ const Squad = () => {
 
   const hasJoinedSquad = userMembership && userMembership.id;
   const userSquad = userMembership?.squad;
-  const isSquadCreator = userSquad?.owner === userMembership?.user;
+  const isSquadCreator = userMembership?.user_id === userMembership?.squad?.owner_id;
 
   // Get squad members if user has joined a squad
   const { data: squadMembers, isLoading: membersLoading, error: membersError } = useQuery({
@@ -30,29 +30,26 @@ const Squad = () => {
     enabled: hasJoinedSquad && !!userSquad?.id,
   });
 
-  // Send message to squad members mutation
-  const sendMessageMutation = useMutation({
-    mutationFn: (messageData) => inviteAPI.sendBulkInvite({
-      squad_id: userSquad.id,
-      message: messageData.message,
-    }),
-    onSuccess: () => {
+  // Send announcement to squad members mutation
+  const sendAnnouncementMutation = useMutation({
+    mutationFn: (announcementData) => squadAPI.sendAnnouncement(userSquad.id, announcementData),
+    onSuccess: (data) => {
       setMessage('');
       setMessagingError('');
       setIsMessagingOpen(false);
-      alert('Message sent to all squad members!');
+      alert(`Announcement sent to ${data.recipients_count} squad members!`);
     },
     onError: (error) => {
-      setMessagingError(error.response?.data?.message || 'Failed to send message');
+      setMessagingError(error.response?.data?.error || 'Failed to send announcement');
     },
   });
 
-  const handleSendMessage = () => {
+  const handleSendAnnouncement = () => {
     if (!message.trim()) {
       setMessagingError('Please enter a message');
       return;
     }
-    sendMessageMutation.mutate({ message: message.trim() });
+    sendAnnouncementMutation.mutate({ message: message.trim() });
   };
 
   const handleJoinSquad = () => {
@@ -258,7 +255,7 @@ const Squad = () => {
                   className="bg-blue-600 hover:bg-blue-700"
                 >
                   <MessageSquare className="h-4 w-4 mr-2" />
-                  Message Members
+                  Send Announcement
                 </Button>
               )}
             </div>
@@ -275,7 +272,7 @@ const Squad = () => {
             <Card className="p-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
                 <MessageSquare className="h-5 w-5 mr-2" />
-                Send Message to Squad Members
+                Send Announcement to Squad Members
               </h3>
 
               {messagingError && (
@@ -284,7 +281,7 @@ const Squad = () => {
 
               <div className="space-y-4">
                 <Textarea
-                  placeholder="Type your message to all squad members..."
+                  placeholder="Type your announcement message to all squad members..."
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
                   rows={4}
@@ -293,7 +290,7 @@ const Squad = () => {
 
                 <div className="flex items-center justify-between">
                   <p className="text-sm text-gray-600">
-                    This message will be sent via SMS to {squadMembers?.length || 0} squad members
+                    This announcement will be sent via SMS to {squadMembers?.length || 0} squad members
                   </p>
                   <div className="flex space-x-2">
                     <Button
@@ -303,13 +300,13 @@ const Squad = () => {
                       Cancel
                     </Button>
                     <Button
-                      onClick={handleSendMessage}
-                      loading={sendMessageMutation.isPending}
-                      disabled={sendMessageMutation.isPending || !message.trim()}
+                      onClick={handleSendAnnouncement}
+                      loading={sendAnnouncementMutation.isPending}
+                      disabled={sendAnnouncementMutation.isPending || !message.trim()}
                       className="bg-blue-600 hover:bg-blue-700"
                     >
                       <Send className="h-4 w-4 mr-2" />
-                      Send Message
+                      Send Announcement
                     </Button>
                   </div>
                 </div>
@@ -415,7 +412,7 @@ const Squad = () => {
                           </div>
                           <div className="flex-1">
                             <p className="text-sm font-medium text-gray-900">
-                              {member.user}
+                              {member.user_display || member.phone_number}
                             </p>
                             <p className="text-xs text-gray-500 capitalize">
                               {member.role}
@@ -509,7 +506,7 @@ const Squad = () => {
                   className="bg-blue-600 hover:bg-blue-700"
                 >
                   <MessageSquare className="h-4 w-4 mr-2" />
-                  Message Members
+                  Send Announcement
                 </Button>
               )}
 

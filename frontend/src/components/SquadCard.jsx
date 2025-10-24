@@ -17,7 +17,7 @@ const SquadCard = ({
   const isUserMember = Boolean(isCurrentUserSquad);
 
   // Check if current user is the owner of this squad
-  const isOwner = currentUser && squad.owner === currentUser.phone_number;
+  const isOwner = currentUser && squad.owner_id === currentUser.id;
 
   // Debug logging for membership detection
   // console.log('SquadCard Debug:', {
