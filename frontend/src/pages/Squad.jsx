@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { Users, Plus, UserPlus, ArrowRight, MapPin, MessageSquare, Send, Phone } from 'lucide-react';
 import { Button, Card, Input, Textarea, Alert } from '../components/ui';
 import { squadAPI, inviteAPI } from '../api';
+import { toast } from 'react-toastify';
 
 const Squad = () => {
   const navigate = useNavigate();
@@ -37,7 +38,23 @@ const Squad = () => {
       setMessage('');
       setMessagingError('');
       setIsMessagingOpen(false);
-      alert(`Announcement sent to ${data.recipients_count} squad members!`);
+      toast.success(`Announcement sent to ${data.recipients_count} squad members!`, {
+        position: "top-center",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: "light",
+        style: {
+          background: 'linear-gradient(135deg, #10b981, #059669)',
+          color: 'white',
+          borderRadius: '12px',
+          border: 'none',
+          boxShadow: '0 10px 25px rgba(16, 185, 129, 0.3)'
+        }
+      });
     },
     onError: (error) => {
       setMessagingError(error.response?.data?.error || 'Failed to send announcement');
