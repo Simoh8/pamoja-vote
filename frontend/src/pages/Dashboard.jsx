@@ -144,17 +144,31 @@ const Dashboard = () => {
     ? new Date(userCurrentSquad.voter_registration_date) > new Date()
     : false;
 
-  // Check if user is owner of any squad
-  const ownedSquads = userSquads.filter(squad => squad.owner_id === user?.id);
-  const isOwnerOfAnySquad = ownedSquads.length > 0;
-  
-  // Check if user is owner of any squad with future registration
-  const hasOwnedSquadWithFutureRegistration = ownedSquads.some(squad =>
-    squad.voter_registration_date && new Date(squad.voter_registration_date) > new Date()
-  );
+  // Check if user owns any squads
+  const { data: ownedSquads, isLoading: ownedSquadsLoading } = useQuery({
+    queryKey: ['my-squads'],
+    queryFn: () => squadAPI.getMySquads(),
+    enabled: true,
+    retry: (failureCount, error) => {
+      if (error?.response?.status === 404) {
+        return false;
+      }
+      return failureCount < 3;
+    },
+  });
 
-  // User can create squad ONLY if they don't have any squad membership
-  const canCreateSquad = !hasJoinedSquad;
+  // Check if user is owner of any squad
+  const isOwnerOfAnySquad = ownedSquads && ownedSquads.length > 0;
+
+  // Check if user is owner of any squad with future registration
+  const hasOwnedSquadWithFutureRegistration = ownedSquads && ownedSquads.length > 0
+    ? ownedSquads.some(squad =>
+        squad.voter_registration_date && new Date(squad.voter_registration_date) > new Date()
+      )
+    : false;
+
+  // User can create squad ONLY if they don't have any squad membership and don't own any squads
+  const canCreateSquad = !hasJoinedSquad && !isOwnerOfAnySquad;
 
   // Refresh data functions
   const handleRefreshData = () => {
@@ -206,14 +220,14 @@ const Dashboard = () => {
           <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="font-medium text-blue-900">Squad Membership Status</h3>
+                <h3 className="font-medium text-blue-900">Squad Status</h3>
                 <p className="text-sm text-blue-700 mt-1">
                   {hasJoinedSquad
                     ? `You're currently a member of ${userCurrentSquad?.name || 'a squad'}.${hasFutureRegistration ? ' The registration date is in the future.' : ''}`
-                    : 'You are the owner of one or more squads but not currently a member of any.'
+                    : `You are the owner of ${ownedSquads?.length || 0} squad${ownedSquads?.length !== 1 ? 's' : ''} but not currently a member of any.`
                   }
                 </p>
-                {hasOwnedSquadWithFutureRegistration && (
+                {isOwnerOfAnySquad && hasOwnedSquadWithFutureRegistration && (
                   <p className="text-xs text-orange-600 mt-1">
                     As an owner with future registration dates, you cannot join other squads until the registration date passes.
                   </p>
@@ -301,7 +315,7 @@ const Dashboard = () => {
       </motion.div>
 
       {/* All Squads */}
-      {(userMemberSquads.length > 0 || (!squadsLoading && !membershipLoading)) && (
+      {(userMemberSquads.length > 0 || (!squadsLoading && !membershipLoading && !ownedSquadsLoading)) && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -421,14 +435,14 @@ const Dashboard = () => {
       )}
 
       {/* Loading States */}
-      {(squadsLoading || centersLoading || membershipLoading || mySquadsLoading) && (
+      {(squadsLoading || centersLoading || membershipLoading || mySquadsLoading || ownedSquadsLoading) && (
         <div className="flex justify-center py-8">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
         </div>
       )}
 
       {/* Empty States */}
-      {!squadsLoading && !membershipLoading && !mySquadsLoading && userMemberSquads.length === 0 && (
+      {!squadsLoading && !membershipLoading && !mySquadsLoading && !ownedSquadsLoading && userMemberSquads.length === 0 && (
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}

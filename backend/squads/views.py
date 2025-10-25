@@ -30,7 +30,25 @@ class SquadViewSet(viewsets.ModelViewSet):
         return SquadSerializer
 
     def perform_create(self, serializer):
-        serializer.save(owner=self.request.user)
+        user = self.request.user
+
+        # Check if user is already a member of any squad
+        existing_membership = SquadMember.objects.filter(user=user).first()
+        if existing_membership:
+            return Response(
+                {'error': f'You are already a member of "{existing_membership.squad.name}". You cannot create a new squad while being a member of another squad.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Check if user is already an owner of any squad
+        owned_squads = Squad.objects.filter(owner=user)
+        if owned_squads.exists():
+            return Response(
+                {'error': f'You are already the owner of squad "{owned_squads.first().name}". You cannot create another squad while owning an existing squad.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        serializer.save(owner=user)
 
     @action(detail=True, methods=['post'])
     def join(self, request, pk=None):

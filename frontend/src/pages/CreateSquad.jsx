@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import {
   Users,
@@ -38,6 +38,36 @@ const CreateSquad = () => {
 
   const { centers, isLoading: centersLoading, error: centersError } =
     usePollingCenters();
+
+  // Check user's current membership and ownership - prevent squad creation if already in a squad or owns one
+  const { data: userMembership, isLoading: membershipLoading } = useQuery({
+    queryKey: ['user-membership'],
+    queryFn: () => squadAPI.getMyMembership(),
+    enabled: true,
+    retry: (failureCount, error) => {
+      if (error?.response?.status === 404) {
+        return false;
+      }
+      return failureCount < 3;
+    },
+  });
+
+  // Check if user owns any squads
+  const { data: ownedSquads, isLoading: ownedSquadsLoading } = useQuery({
+    queryKey: ['my-squads'],
+    queryFn: () => squadAPI.getMySquads(),
+    enabled: true,
+    retry: (failureCount, error) => {
+      if (error?.response?.status === 404) {
+        return false;
+      }
+      return failureCount < 3;
+    },
+  });
+
+  const hasJoinedSquad = userMembership && userMembership.id;
+  const isOwnerOfSquad = ownedSquads && ownedSquads.length > 0;
+  const cannotCreateSquad = hasJoinedSquad || isOwnerOfSquad;
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -152,47 +182,58 @@ const CreateSquad = () => {
       let toastMessage = "";
       let action = null;
 
-      if (status === 400) {
+      if (status === 403) {
+        toastTitle = "Permission Denied";
+        toastMessage = "You don't have permission to create a squad.";
+      } else if (status === 400) {
         // Handle 400 Bad Request - check various possible error message formats
-        const errorText = 
+        const errorText =
           errorData?.non_field_errors?.[0] ||
           errorData?.detail ||
           errorData?.message ||
           errorData?.error ||
           err?.message ||
-          "A squad with similar details already exists";
+          "Unable to create squad";
 
-      
-
-        // Check for existing squad pattern in any error text
-        const existingSquadMatch = errorText.match(/Please join "([^"]+)"/);
-        
-        if (existingSquadMatch) {
-          const squadName = existingSquadMatch[1];
-          setSuggestedSquad(squadName);
-          
-          toastTitle = "Squad Already Exists";
-          toastMessage = `"${squadName}" is already active at this location. Would you like to join instead?`;
-          
+        // Check for existing squad membership patterns
+        if (errorText.includes("already a member")) {
+          toastTitle = "Already a Member";
+          toastMessage = "You are already a member of a squad. You cannot create a new squad while being a member of another squad.";
           action = (
             <Button
               onClick={() => {
                 toast.dismiss();
-                navigate("/join-squad");
+                navigate("/squad");
               }}
               variant="outline"
               size="sm"
-              className="border-green-200 text-green-700 hover:bg-green-50"
+              className="border-blue-200 text-blue-700 hover:bg-blue-50"
             >
-              Join {squadName}
+              Go to Squad
+            </Button>
+          );
+        } else if (errorText.includes("already the owner")) {
+          toastTitle = "Already an Owner";
+          toastMessage = "You are already the owner of a squad. You cannot create another squad while owning an existing squad.";
+          action = (
+            <Button
+              onClick={() => {
+                toast.dismiss();
+                navigate("/squad");
+              }}
+              variant="outline"
+              size="sm"
+              className="border-blue-200 text-blue-700 hover:bg-blue-50"
+            >
+              Manage Squad
             </Button>
           );
         } else {
           // Generic 400 error - likely validation or existing squad without specific message
           toastTitle = "Cannot Create Squad";
-          toastMessage = errorText || "A squad with similar details may already exist at this location.";
+          toastMessage = errorText || "Please check your squad membership status.";
         }
-      } else if (status === 401) {
+      } else if (status === 409) {
         toastTitle = "Authentication Required";
         toastMessage = "Please log in to create a squad.";
       } else if (status === 403) {
@@ -207,10 +248,10 @@ const CreateSquad = () => {
       } else {
         // Fallback for other errors or no status
         toastTitle = "Failed to Create Squad";
-        toastMessage = 
-          errorData?.detail || 
-          errorData?.message || 
-          err?.message || 
+        toastMessage =
+          errorData?.detail ||
+          errorData?.message ||
+          err?.message ||
           "Please check your information and try again.";
       }
 
@@ -301,6 +342,96 @@ const CreateSquad = () => {
 
     createSquadMutation.mutate(payload);
   };
+
+  // Show loading state while checking membership
+  if (membershipLoading || ownedSquadsLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 flex items-center justify-center p-4">
+        <div className="max-w-md mx-auto text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Checking your squad membership...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Prevent squad creation if user is already in a squad or owns one
+  if (cannotCreateSquad) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 p-4">
+        <div className="max-w-2xl mx-auto">
+          <Card className="p-8 text-center">
+            <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <AlertCircle className="h-8 w-8 text-red-600" />
+            </div>
+
+            <h1 className="text-2xl font-bold text-gray-900 mb-4">Cannot Create Squad</h1>
+
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+              <p className="text-red-800 font-medium mb-2">
+                {hasJoinedSquad
+                  ? "You are already a member of a squad"
+                  : "You are already the owner of a squad"
+                }
+              </p>
+              <p className="text-red-700 text-sm">
+                {hasJoinedSquad
+                  ? `You are currently a member of "${userMembership?.squad?.name || 'a squad'}". You cannot create a new squad while being a member of another squad.`
+                  : `You are already the owner of "${ownedSquads?.[0]?.name || 'a squad'}". You cannot create another squad while owning an existing squad.`
+                }
+              </p>
+            </div>
+
+            <div className="space-y-3">
+              {hasJoinedSquad ? (
+                <Button
+                  onClick={() => navigate("/squad")}
+                  className="w-full"
+                >
+                  <Users className="h-4 w-4 mr-2" />
+                  Go to Your Squad
+                </Button>
+              ) : (
+                <Button
+                  onClick={() => navigate("/squad")}
+                  className="w-full"
+                >
+                  <Users className="h-4 w-4 mr-2" />
+                  Manage Your Squad
+                </Button>
+              )}
+
+              <Button
+                onClick={() => navigate("/join-squad")}
+                variant="outline"
+                className="w-full"
+              >
+                Browse Other Squads
+              </Button>
+
+              <Button
+                onClick={() => navigate("/")}
+                variant="ghost"
+                className="w-full"
+              >
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Back to Dashboard
+              </Button>
+            </div>
+
+            <div className="mt-6 pt-4 border-t border-gray-200">
+              <p className="text-xs text-gray-500">
+                {hasJoinedSquad
+                  ? "To create a new squad, you must first leave your current squad."
+                  : "To create another squad, you must first transfer ownership of your current squad or delete it."
+                }
+              </p>
+            </div>
+          </Card>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 p-4">
@@ -480,20 +611,20 @@ const CreateSquad = () => {
             </div>
 
             <div className="flex gap-4 pt-4 border-t border-gray-200">
-              <Button 
-                type="button" 
-                variant="ghost" 
+              <Button
+                type="button"
+                variant="ghost"
                 onClick={() => navigate("/join-squad")}
                 disabled={createSquadMutation.isPending}
               >
                 <ArrowLeft className="h-4 w-4 mr-2" /> Back
               </Button>
-              <Button 
-                type="submit" 
+              <Button
+                type="submit"
                 loading={createSquadMutation.isPending}
                 className="flex-1"
               >
-                <Users className="h-4 w-4 mr-2" /> 
+                <Users className="h-4 w-4 mr-2" />
                 {createSquadMutation.isPending ? "Creating Squad..." : "Create Squad"}
               </Button>
             </div>
