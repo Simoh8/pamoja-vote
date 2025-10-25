@@ -2,13 +2,13 @@ import { useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import { useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Users, MapPin, Plus, Trophy, Calendar } from 'lucide-react';
+import { Users, MapPin, Plus } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { squadAPI, centerAPI } from '../api';
 import { Button } from '../components/ui';
 import Card from '../components/Card';
 import SquadCard from '../components/SquadCard';
-import { toast } from 'react-hot-toast'; // or your preferred toast library
+import { toast } from 'react-hot-toast';
 
 const Dashboard = () => {
   const { user } = useAuth();
@@ -21,7 +21,7 @@ const Dashboard = () => {
     queryClient.invalidateQueries({ queryKey: ['user-membership'] });
   }, [queryClient]);
 
-  // Join squad mutation - add this for direct joining
+  // Join squad mutation
   const joinSquadMutation = useMutation({
     mutationFn: (squadId) => squadAPI.joinSquad(squadId),
     onSuccess: () => {
@@ -42,6 +42,7 @@ const Dashboard = () => {
   const handleCreateSquad = () => {
     navigate('/squad/create');
   };
+
   const handleFindCenters = () => {
     navigate('/find-centers');
   };
@@ -66,18 +67,14 @@ const Dashboard = () => {
     joinSquadMutation.mutate(squadId);
   };
 
-  // Clear membership mutation (for debugging and user-initiated reset)
+  // Clear membership mutation
   const clearMembershipMutation = useMutation({
     mutationFn: () => squadAPI.clearMembership(),
-    onSuccess: (response) => {
-      // console.log('Membership cleared successfully:', response);
-      // Invalidate all related queries to force fresh data fetch
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['user-membership'] });
       queryClient.invalidateQueries({ queryKey: ['squads'] });
       queryClient.invalidateQueries({ queryKey: ['user-squads'] });
       queryClient.invalidateQueries({ queryKey: ['my-membership'] });
-
-      // Force refetch the squads query immediately
       queryClient.refetchQueries({ queryKey: ['squads'] });
 
       toast.success('Membership cleared! You can now join or create squads fresh.', {
@@ -91,19 +88,18 @@ const Dashboard = () => {
     },
   });
 
-  // Query for squads - always get all squads to determine user's membership from squad data
+  // Query for squads
   const { data: squads, isLoading: squadsLoading } = useQuery({
     queryKey: ['squads'],
     queryFn: () => squadAPI.getSquads(),
   });
 
-  // Get user's membership info - ENABLED to properly detect user membership
+  // Get user's membership info
   const { data: userMembership, isLoading: membershipLoading } = useQuery({
     queryKey: ['user-membership'],
     queryFn: () => squadAPI.getMyMembership(),
-    enabled: true, // Enable this query to fetch actual membership data
+    enabled: true,
     retry: (failureCount, error) => {
-      // Don't retry on 404 (user not a member of any squad)
       if (error?.response?.status === 404) {
         return false;
       }
@@ -116,7 +112,6 @@ const Dashboard = () => {
     queryKey: ['nearby-centers'],
     queryFn: () => centerAPI.getNearbyCenters(),
     retry: (failureCount, error) => {
-      // Don't retry on 404 errors (endpoint doesn't exist yet)
       if (error?.response?.status === 404) {
         return false;
       }
@@ -124,18 +119,12 @@ const Dashboard = () => {
     },
   });
 
-  const userSquads = Array.isArray(squads) ? squads : squads?.results ? squads.results : [];
-
-  // Check if user has joined any squads based on membership data
-  const hasJoinedSquad = userMembership && userMembership.id ? true : false;
-
-  // Get user's squads - this should contain their actual squad memberships
+  // Get user's squads
   const { data: mySquads, isLoading: mySquadsLoading } = useQuery({
     queryKey: ['my-squads'],
     queryFn: () => squadAPI.getMySquads(),
-    enabled: hasJoinedSquad, // Only fetch if user has membership
+    enabled: !!userMembership?.id,
     retry: (failureCount, error) => {
-      // Don't retry on 404 (user not a member of any squad)
       if (error?.response?.status === 404) {
         return false;
       }
@@ -143,34 +132,31 @@ const Dashboard = () => {
     },
   });
 
-  // Use mySquads if available, otherwise fall back to empty array
+  // Derived state
+  const userSquads = Array.isArray(squads) ? squads : squads?.results ? squads.results : [];
+  const hasJoinedSquad = !!(userMembership && userMembership.id);
   const userMemberSquads = Array.isArray(mySquads) ? mySquads : (mySquads?.results ? mySquads.results : []);
-
-  // Get the current squad for logic purposes - use the first squad from mySquads
   const userCurrentSquad = userMemberSquads.length > 0 ? userMemberSquads[0] : null;
-  const userMembershipRole = userMembership?.role || 'member';
+  const nearbyCenters = centers || [];
 
   // Check if user's current squad has future registration date
   const hasFutureRegistration = userCurrentSquad?.voter_registration_date
     ? new Date(userCurrentSquad.voter_registration_date) > new Date()
     : false;
 
-  const nearbyCenters = centers || [];
-
-  // Check if user is owner of any squad with future registration
+  // Check if user is owner of any squad
   const ownedSquads = userSquads.filter(squad => squad.owner_id === user?.id);
+  const isOwnerOfAnySquad = ownedSquads.length > 0;
+  
+  // Check if user is owner of any squad with future registration
   const hasOwnedSquadWithFutureRegistration = ownedSquads.some(squad =>
     squad.voter_registration_date && new Date(squad.voter_registration_date) > new Date()
   );
 
-  // DEFINE MISSING VARIABLES:
-  // Check if user is owner of any squad
-  const isOwnerOfAnySquad = ownedSquads.length > 0;
-  
-  // User can create squad if they haven't joined any, or if they're an owner (owners can manage multiple squads)
-  const canCreateSquad = !hasJoinedSquad || isOwnerOfAnySquad || !hasFutureRegistration;
+  // User can create squad ONLY if they don't have any squad membership
+  const canCreateSquad = !hasJoinedSquad;
 
-  // Refresh data function with toast
+  // Refresh data functions
   const handleRefreshData = () => {
     queryClient.invalidateQueries({ queryKey: ['squads'] });
     queryClient.refetchQueries({ queryKey: ['squads'] });
@@ -180,13 +166,21 @@ const Dashboard = () => {
     });
   };
 
+  const handleRefreshSquadData = () => {
+    queryClient.invalidateQueries({ queryKey: ['my-squads'] });
+    queryClient.invalidateQueries({ queryKey: ['user-membership'] });
+    queryClient.refetchQueries({ queryKey: ['my-squads'] });
+    toast.success('Squad data refreshed!', {
+      icon: '🔄',
+      duration: 2000
+    });
+  };
+
   const handleSquadCardClick = (squad) => {
-    // Check if current user is the owner of this squad
     const isOwner = squad.owner_id === user?.id;
     const isMember = userCurrentSquad?.id === squad.id;
 
     if (isOwner || isMember) {
-      // Navigate to squad management
       navigate('/squad');
     }
   };
@@ -259,49 +253,54 @@ const Dashboard = () => {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.1 }}
-        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8"
+        className="mb-8"
       >
-        {/* Always show Join Squad card */}
-        <Card className="p-6 hover:shadow-lg transition-shadow cursor-pointer" onClick={handleJoinSquad}>
-          <div className="flex items-center">
-            <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mr-4">
-              <Users className="w-6 h-6 text-blue-600" />
-            </div>
-            <div>
-              <h3 className="font-semibold text-gray-900">Join a Squad</h3>
-              <p className="text-sm text-gray-600">Team up with friends</p>
-            </div>
-          </div>
-        </Card>
-
-        {canCreateSquad && (
-          <Card className="p-6 hover:shadow-lg transition-shadow cursor-pointer" onClick={handleCreateSquad}>
+        <h2 className="text-xl font-bold text-gray-900 mb-4">Quick Actions</h2>
+        <div className={`grid gap-6 ${canCreateSquad ? 'md:grid-cols-3' : 'md:grid-cols-2'} ${!canCreateSquad ? 'max-w-2xl mx-auto' : ''}`}>
+          {/* Join Squad Card */}
+          <Card className="p-6 hover:shadow-lg transition-shadow cursor-pointer" onClick={handleJoinSquad}>
             <div className="flex items-center">
-              <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mr-4">
-                <Plus className="w-6 h-6 text-green-600" />
+              <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mr-4">
+                <Users className="w-6 h-6 text-blue-600" />
               </div>
               <div>
-                <h3 className="font-semibold text-gray-900">Create Squad</h3>
-                <p className="text-sm text-gray-600">Start your own group</p>
+                <h3 className="font-semibold text-gray-900">Join a Squad</h3>
+                <p className="text-sm text-gray-600">Team up with friends</p>
               </div>
             </div>
           </Card>
-        )}
 
-        <Card className="p-6 hover:shadow-lg transition-shadow cursor-pointer" onClick={handleFindCenters}>
-          <div className="flex items-center">
-            <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center mr-4">
-              <MapPin className="w-6 h-6 text-orange-600" />
+          {/* Create Squad Card - Conditionally Rendered */}
+          {canCreateSquad && (
+            <Card className="p-6 hover:shadow-lg transition-shadow cursor-pointer" onClick={handleCreateSquad}>
+              <div className="flex items-center">
+                <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mr-4">
+                  <Plus className="w-6 h-6 text-green-600" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-gray-900">Create Squad</h3>
+                  <p className="text-sm text-gray-600">Start your own group</p>
+                </div>
+              </div>
+            </Card>
+          )}
+
+          {/* Find Centers Card */}
+          <Card className="p-6 hover:shadow-lg transition-shadow cursor-pointer" onClick={handleFindCenters}>
+            <div className="flex items-center">
+              <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center mr-4">
+                <MapPin className="w-6 h-6 text-orange-600" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-gray-900">Find Centers</h3>
+                <p className="text-sm text-gray-600">Locate registration spots</p>
+              </div>
             </div>
-            <div>
-              <h3 className="font-semibold text-gray-900">Find Centers</h3>
-              <p className="text-sm text-gray-600">Locate registration spots</p>
-            </div>
-          </div>
-        </Card>
+          </Card>
+        </div>
       </motion.div>
 
-      {/* All Squads - Show when user has no squads or when showing user's squads */}
+      {/* All Squads */}
       {(userMemberSquads.length > 0 || (!squadsLoading && !membershipLoading)) && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -313,7 +312,6 @@ const Dashboard = () => {
             {hasJoinedSquad ? 'Your Squad' : 'Available Squads'}
           </h2>
 
-          {/* Show message when user has membership but no squad info */}
           {hasJoinedSquad && userMemberSquads.length === 0 && !mySquadsLoading && (
             <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
               <div className="flex items-center justify-between">
@@ -355,7 +353,6 @@ const Dashboard = () => {
                 squad={squad}
                 isCurrentUserSquad={userCurrentSquad?.id === squad.id}
                 onJoin={handleJoinSquadFromDashboard}
-                onLeave={() => {}}
                 onClick={handleSquadCardClick}
                 showJoinButton={!hasOwnedSquadWithFutureRegistration && (!hasJoinedSquad || squad.id !== userCurrentSquad?.id)}
                 currentUser={user}

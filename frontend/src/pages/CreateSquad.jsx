@@ -281,11 +281,14 @@ const CreateSquad = () => {
       voter_registration_date: formData.voter_registration_date,
       ...(selectedCenter && {
         registration_center: {
-          id: selectedCenter.id,
           name: selectedCenter.name,
           county: selectedCenter.county,
           constituency: selectedCenter.constituency,
           ward: selectedCenter.location,
+          location: selectedCenter.location,
+          lat: selectedCenter.latitude,
+          lng: selectedCenter.longitude,
+          address: `${selectedCenter.location}, ${selectedCenter.county}`,
         },
       }),
     };

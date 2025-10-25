@@ -1,6 +1,6 @@
 from rest_framework import serializers
-from django.conf import settings
 from .models import Squad, SquadMember
+from centers.models import Center
 
 
 def mask_phone_number(phone_number, show_first=4, show_last=2):
@@ -50,10 +50,9 @@ class SquadMemberSerializer(serializers.ModelSerializer):
 class CenterSerializer(serializers.ModelSerializer):
     """Serializer for Center model"""
     class Meta:
-        from centers.models import Center
         model = Center
-        fields = ('id', 'name', 'county', 'constituency', 'ward', 'address', 'lat', 'lng')
-        read_only_fields = ('id', 'name', 'county', 'constituency', 'ward', 'address', 'lat', 'lng')
+        fields = ('id', 'name', 'county', 'constituency', 'ward', 'location', 'address', 'lat', 'lng')
+        read_only_fields = ('id', 'name', 'county', 'constituency', 'ward', 'location', 'address', 'lat', 'lng')
 
     def to_representation(self, instance):
         """Handle None values properly"""
@@ -74,10 +73,16 @@ class SquadSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Squad
-        fields = ('id', 'name', 'description', 'max_members', 'county',
-                 'is_public', 'voter_registration_date', 'owner', 'owner_id', 'members', 'member_count',
-                 'registration_progress', 'registration_center', 'remaining_slots', 'created_at')
-        read_only_fields = ('id', 'owner', 'owner_id', 'created_at', 'member_count', 'registration_progress', 'remaining_slots')
+        fields = (
+            'id', 'name', 'description', 'max_members', 'county',
+            'is_public', 'voter_registration_date', 'owner', 'owner_id', 
+            'members', 'member_count', 'registration_progress', 
+            'registration_center', 'remaining_slots', 'created_at'
+        )
+        read_only_fields = (
+            'id', 'owner', 'owner_id', 'created_at', 'member_count', 
+            'registration_progress', 'remaining_slots'
+        )
 
     def get_owner(self, obj):
         """Return masked phone number for owner"""
@@ -107,18 +112,17 @@ class SquadSerializer(serializers.ModelSerializer):
         members = obj.members.all()
         return SquadMemberSerializer(members, many=True, context=self.context).data
 
-    def create(self, validated_data):
-        validated_data['owner'] = self.context['request'].user
-        return super().create(validated_data)
-
 
 class SquadCreateSerializer(serializers.ModelSerializer):
     """Serializer for creating a new squad"""
-    registration_center = serializers.DictField(required=False, allow_null=True)
+    registration_center = serializers.JSONField(required=False, allow_null=True)
 
     class Meta:
         model = Squad
-        fields = ['name', 'description', 'max_members', 'county', 'is_public', 'voter_registration_date', 'registration_center']
+        fields = [
+            'name', 'description', 'max_members', 'county', 'is_public', 
+            'voter_registration_date', 'registration_center'
+        ]
         extra_kwargs = {
             'max_members': {'required': False, 'allow_null': True},
         }
@@ -133,12 +137,49 @@ class SquadCreateSerializer(serializers.ModelSerializer):
         if 'max_members' in data and data['max_members'] is not None and data['max_members'] <= 0:
             raise serializers.ValidationError({"max_members": "Must be a positive number."})
 
+        # Validate registration center data if provided
+        registration_center_data = data.get('registration_center')
+        if registration_center_data:
+            # Ensure it's a dictionary
+            if not isinstance(registration_center_data, dict):
+                raise serializers.ValidationError({"registration_center": "Must be a dictionary object."})
+
+            # Validate required center fields
+            required_center_fields = ['name', 'county']
+            for field in required_center_fields:
+                if not registration_center_data.get(field):
+                    raise serializers.ValidationError({f"registration_center.{field}": 'This field is required.'})
+
         return data
 
     def create(self, validated_data):
-        # Remove registration_center from validated_data since it's not a model field
-        validated_data.pop('registration_center', None)
+        # Extract registration_center from validated_data
+        registration_center_data = validated_data.pop('registration_center', None)
 
+        # Create or get the center
+        registration_center = None
+        if registration_center_data:
+            # Try to find existing center first
+            try:
+                registration_center = Center.objects.get(
+                    name=registration_center_data['name'],
+                    county=registration_center_data['county']
+                )
+            except Center.DoesNotExist:
+                # Create new center
+                registration_center = Center.objects.create(
+                    name=registration_center_data['name'],
+                    county=registration_center_data['county'],
+                    constituency=registration_center_data.get('constituency'),
+                    ward=registration_center_data.get('ward'),
+                    location=registration_center_data.get('ward') or registration_center_data.get('location'),
+                    polling_station_name=registration_center_data.get('polling_station_name'),
+                    address=registration_center_data.get('address', f"{registration_center_data.get('ward', '')}, {registration_center_data['county']}"),
+                    lat=registration_center_data.get('lat'),
+                    lng=registration_center_data.get('lng')
+                )
+
+        # Create the squad
         squad = Squad.objects.create(
             name=validated_data.get('name'),
             description=validated_data.get('description', ''),
@@ -146,9 +187,11 @@ class SquadCreateSerializer(serializers.ModelSerializer):
             county=validated_data.get('county'),
             is_public=validated_data.get('is_public', True),
             voter_registration_date=validated_data.get('voter_registration_date'),
+            registration_center=registration_center,
             owner=self.context['request'].user
         )
 
+        # Add owner as leader
         SquadMember.objects.create(
             user=self.context['request'].user,
             squad=squad,
@@ -156,6 +199,11 @@ class SquadCreateSerializer(serializers.ModelSerializer):
         )
 
         return squad
+
+    def to_representation(self, instance):
+        """Convert the created squad instance to proper JSON representation"""
+        # Use the regular SquadSerializer for the response to ensure proper serialization
+        return SquadSerializer(instance, context=self.context).data
 
 
 class SquadJoinSerializer(serializers.Serializer):

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
-import { Users, MapPin, UserPlus, Search, Filter, Calendar, Plus, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Users, Search, Plus, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { squadAPI } from '../api';
 import { Button, Input, Card, Alert } from '../components/ui';
@@ -12,7 +12,7 @@ const JoinSquad = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCounty, setSelectedCounty] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize] = useState(9); // Show 9 squads per page (3x3 grid)
+  const [pageSize] = useState(9);
   const [error, setError] = useState('');
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -29,13 +29,12 @@ const JoinSquad = () => {
     setCurrentPage(1);
   }, [searchTerm, selectedCounty]);
 
-  // Check user's current membership - ENABLED to properly detect user membership
+  // Check user's current membership
   const { data: userMembership, isLoading: membershipLoading } = useQuery({
     queryKey: ['user-membership'],
     queryFn: () => squadAPI.getMyMembership(),
-    enabled: true, // Enable this query to fetch actual membership data
+    enabled: true,
     retry: (failureCount, error) => {
-      // Don't retry on 404 (user not a member of any squad)
       if (error?.response?.status === 404) {
         return false;
       }
@@ -45,7 +44,7 @@ const JoinSquad = () => {
 
   const hasJoinedSquad = userMembership && userMembership.id;
 
-  // Query for squads - show user's squads if they have any, or all squads if they don't
+  // Query for squads
   const {
     data: squadsResponse,
     isLoading,
@@ -62,16 +61,15 @@ const JoinSquad = () => {
       };
       return hasJoinedSquad ? squadAPI.getMySquads() : squadAPI.getSquads(params);
     },
-    keepPreviousData: true, // Keep previous data while loading new page
+    keepPreviousData: true,
   });
 
   // Extract squads and pagination info from response
-  // Handle different response formats: getMySquads() vs getSquads()
   const squads = hasJoinedSquad
     ? (Array.isArray(squadsResponse) ? squadsResponse : [])
     : (squadsResponse?.results || []);
   const totalCount = hasJoinedSquad ? squads.length : (squadsResponse?.count || 0);
-  const totalPages = hasJoinedSquad ? 1 : Math.ceil(totalCount / pageSize); // My squads don't paginate
+  const totalPages = hasJoinedSquad ? 1 : Math.ceil(totalCount / pageSize);
   const hasNextPage = hasJoinedSquad ? false : (squadsResponse?.next !== null);
   const hasPreviousPage = hasJoinedSquad ? false : (squadsResponse?.previous !== null || currentPage > 1);
 
@@ -80,9 +78,9 @@ const JoinSquad = () => {
     mutationFn: (squadId) => squadAPI.joinSquad(squadId),
     onSuccess: () => {
       setError('');
-      refetch(); // Refresh squads list
-      queryClient.invalidateQueries({ queryKey: ['user-membership'] }); // Refresh user membership
-      queryClient.invalidateQueries({ queryKey: ['squads'] }); // Refresh all squads
+      refetch();
+      queryClient.invalidateQueries({ queryKey: ['user-membership'] });
+      queryClient.invalidateQueries({ queryKey: ['squads'] });
     },
     onError: (error) => {
       setError(error.response?.data?.message || 'Failed to join squad');
@@ -99,7 +97,7 @@ const JoinSquad = () => {
       queryClient.invalidateQueries({ queryKey: ['squads'] });
       queryClient.invalidateQueries({ queryKey: ['user-membership'] });
       queryClient.invalidateQueries({ queryKey: ['user-squads'] });
-      refetch(); // Refresh current query
+      refetch();
     },
     onError: (error) => {
       setError(error.response?.data?.message || 'Failed to leave squad');
@@ -119,21 +117,22 @@ const JoinSquad = () => {
     squad.voter_registration_date && new Date(squad.voter_registration_date) > new Date()
   );
 
+  // Check create permissions
+  const { data: createPermissions } = useQuery({
+    queryKey: ['create-permissions'],
+    queryFn: () => squadAPI.checkCreatePermissions(),
+    retry: false,
+  });
+
+  const canCreateSquad = createPermissions?.can_create || false;
+
+  // Event handlers
   const handleSquadCardClick = (squad) => {
-    // Check if current user is the owner of this squad
     const isOwner = squad.owner_id === user?.id;
     const isMember = isAlreadyInSquad && userMembership?.squad?.id === squad.id;
 
-    if (isOwner) {
-      // Navigate to squad management if user is the owner
+    if (isOwner || isMember) {
       navigate('/squad');
-    } else if (isMember) {
-      // Navigate to squad management if user is a member
-      navigate('/squad');
-    } else {
-      // For non-members, just show the squad details (could be enhanced later)
-      // For now, do nothing or show a toast
-      console.log('View squad details:', squad.name);
     }
   };
 
@@ -154,17 +153,23 @@ const JoinSquad = () => {
     joinSquadMutation.mutate(squadId);
   };
 
+  // ADDED MISSING FUNCTION
+  const handleLeaveSquad = (squadId) => {
+    leaveSquadMutation.mutate(squadId);
+  };
+
+  const handlePageChange = (newPage) => {
+    setCurrentPage(newPage);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  // Filter squads for display
   const filteredSquads = squads.filter(squad =>
     squad.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     squad.description.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const counties = squadsError ? [] : [...new Set(squads.map(squad => squad.county))];
-
-  const handlePageChange = (newPage) => {
-    setCurrentPage(newPage);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 p-4">
@@ -324,25 +329,20 @@ const JoinSquad = () => {
             </div>
           ) : filteredSquads.length === 0 ? (
             <div className="relative">
-              {/* Background decoration */}
               <div className="absolute inset-0 bg-gradient-to-r from-blue-600/10 via-indigo-600/10 to-purple-600/10 rounded-3xl blur-3xl transform scale-110"></div>
 
               <Card className="relative p-8 bg-gradient-to-br from-white via-blue-50/30 to-indigo-50/30 border border-blue-200/50 shadow-xl rounded-2xl text-center overflow-hidden">
-                {/* Decorative elements */}
                 <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-blue-400/20 to-indigo-400/20 rounded-full -translate-y-16 translate-x-16"></div>
                 <div className="absolute bottom-0 left-0 w-24 h-24 bg-gradient-to-tr from-purple-400/20 to-pink-400/20 rounded-full translate-y-12 -translate-x-12"></div>
 
                 <div className="relative max-w-md mx-auto">
-                  {/* Icon container */}
                   <div className="relative mb-6">
                     <div className="w-20 h-20 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 rounded-2xl flex items-center justify-center mx-auto shadow-lg">
                       <Users className="h-10 w-10 text-white" />
                     </div>
-                    {/* Glow effect */}
                     <div className="absolute inset-0 w-20 h-20 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 rounded-2xl mx-auto blur-xl opacity-30 -z-10"></div>
                   </div>
 
-                  {/* Dynamic content based on state */}
                   <div className="space-y-3 mb-6">
                     <h3 className="text-2xl font-bold text-gray-900">
                       {searchTerm || selectedCounty
@@ -360,7 +360,6 @@ const JoinSquad = () => {
                     </p>
                   </div>
 
-                  {/* Enhanced button */}
                   <div className="flex flex-col items-center">
                     {canCreateSquad && (
                       <Button
@@ -373,7 +372,6 @@ const JoinSquad = () => {
                       </Button>
                     )}
 
-                    {/* Subtle text below button */}
                     <p className="text-sm text-gray-500 mt-3">
                       {canCreateSquad
                         ? 'Join thousands of leaders making their voices heard'
@@ -403,7 +401,7 @@ const JoinSquad = () => {
                 ))}
               </div>
 
-              {/* Pagination - only show when browsing all squads, not user's squads */}
+              {/* Pagination */}
               {!hasJoinedSquad && totalPages > 1 && (
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}

@@ -8,7 +8,7 @@ class CenterSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Center
-        fields = ('id', 'name', 'county', 'constituency', 'ward', 'polling_station_name',
+        fields = ('id', 'name', 'county', 'constituency', 'ward', 'location', 'polling_station_name',
                  'address', 'lat', 'lng', 'opening_hours', 'distance')
 
     def get_distance(self, obj):
@@ -26,7 +26,7 @@ class CenterCreateSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Center
-        fields = ('name', 'county', 'constituency', 'ward', 'polling_station_name',
+        fields = ('name', 'county', 'constituency', 'ward', 'location', 'polling_station_name',
                  'address', 'lat', 'lng', 'opening_hours')
 
     def create(self, validated_data):

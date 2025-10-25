@@ -11,6 +11,7 @@ class Center(models.Model):
     county = models.CharField(max_length=50)
     constituency = models.CharField(max_length=100, blank=True, null=True)
     ward = models.CharField(max_length=100, blank=True, null=True)
+    location = models.CharField(max_length=200, blank=True, null=True, help_text="Ward or location name")
     polling_station_name = models.CharField(max_length=200, blank=True, null=True, help_text="Primary school or polling station name")
     address = models.TextField()
     lat = models.DecimalField(max_digits=10, decimal_places=8, null=True, blank=True)
