@@ -63,16 +63,19 @@ const Navbar = () => {
             onClick={() => navigate('/')}
             className="flex items-center hover:opacity-80 transition-opacity cursor-pointer"
           >
-          <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center overflow-hidden">
+            <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
+              <span className="text-white font-bold text-sm">🇰🇪</span>
+            </div>
+            <span className="ml-2 text-xl font-bold text-gray-900">Pamoja2Vote</span>
+          </button>
+
+                    {/* <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center overflow-hidden">
             <img
               src="./images/Githinji.png"
               alt="Kenyan flag"
               className="w-full h-full object-cover"
             />
-          </div>
-
-            <span className="ml-2 text-xl font-bold text-gray-900">Pamoja2Vote</span>
-          </button>
+          </div> */}
 
           {/* User actions */}
           <div className="flex items-center space-x-4">
