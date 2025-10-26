@@ -160,7 +160,6 @@ const MapView = ({ centers = [], maxMarkers = 1000 }) => {
       for (const createIcon of approaches) {
         try {
           const icon = createIcon();
-          // console.log('Custom icon created successfully');
           return icon;
         } catch (error) {
           console.warn('Icon creation approach failed:', error);
@@ -168,11 +167,9 @@ const MapView = ({ centers = [], maxMarkers = 1000 }) => {
       }
 
       // If all approaches fail, return null to use default marker
-      // console.log('All icon creation approaches failed, using default marker');
       return null;
 
     } catch (error) {
-      // console.error('Failed to create custom icon:', error);
       return null;
     }
   }, []);
@@ -232,19 +229,21 @@ const MapView = ({ centers = [], maxMarkers = 1000 }) => {
 
   return (
     <div className="w-full h-[600px] rounded-lg overflow-hidden border border-gray-300">
-      {/* Custom styles for Leaflet icons */}
-      <style jsx global>{`
-        .leaflet-container .leaflet-marker-icon {
-          filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
-        }
-        .leaflet-popup-content-wrapper {
-          border-radius: 8px;
-          box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-        }
-        .leaflet-popup-tip {
-          border: none;
-        }
-      `}</style>
+      {/* Custom styles for Leaflet icons - Fixed: removed boolean attributes */}
+      <style>
+        {`
+          .leaflet-container .leaflet-marker-icon {
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+          }
+          .leaflet-popup-content-wrapper {
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+          }
+          .leaflet-popup-tip {
+            border: none;
+          }
+        `}
+      </style>
 
       <MapContainer
         center={kenyaCenter}
