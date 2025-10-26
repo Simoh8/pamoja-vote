@@ -335,6 +335,9 @@ class SquadViewSet(viewsets.ModelViewSet):
         if county:
             squads = squads.filter(county=county)
 
+        serializer = SquadLeaderboardSerializer(squads, many=True)
+        return Response(serializer.data)
+
     @action(detail=True, methods=['get'])
     def members(self, request, pk=None):
         """Get members of a specific squad"""
@@ -348,6 +351,10 @@ class SquadViewSet(viewsets.ModelViewSet):
                     {'error': 'You do not have permission to view this squad\'s members'},
                     status=status.HTTP_403_FORBIDDEN
                 )
+
+        members = squad.members.all()
+        serializer = SquadMemberSerializer(members, many=True, context={'request': request})
+        return Response(serializer.data)
 
     @action(detail=True, methods=['get'])
     def available_at_center(self, request, pk=None):
@@ -400,6 +407,11 @@ class SquadMemberViewSet(viewsets.ModelViewSet):
 
         membership.role = new_role
         membership.save()
+
+        return Response({
+            'message': 'Role updated successfully',
+            'membership': SquadMemberSerializer(membership).data
+        })
 
     @action(detail=True, methods=['patch'])
     def update_registration_status(self, request, pk=None):

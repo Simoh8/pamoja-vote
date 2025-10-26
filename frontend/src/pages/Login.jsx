@@ -192,6 +192,7 @@ const Login = () => {
               src="/images/Githinji.png"
               alt="Kenyan flag"
               className="w-full h-full object-cover"
+              style={{ borderRadius: '25%' }}
             />             
             
    </motion.div>
