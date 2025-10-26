@@ -20,19 +20,6 @@ const SquadCard = ({
   // Check if current user is the owner of this squad
   const isOwner = currentUser && squad.owner_id === currentUser.id;
 
-  // Debug logging for membership detection
-  // console.log('SquadCard Debug:', {
-  //   squadId: squad?.id,
-  //   squadName: squad?.name,
-  //   isCurrentUserSquad,
-  //   isUserMember,
-  //   userSquadsLength: squad?.member_count,
-  //   canJoinThisSquad,
-  //   isRegistrationFuture,
-  //   showJoinButton,
-  //   componentLocation: 'Dashboard' // Add this to distinguish from JoinSquad
-  // });
-
   // Safely check registration date
   const registrationDate = squad?.voter_registration_date;
   const isRegistrationFuture = registrationDate
@@ -47,21 +34,8 @@ const SquadCard = ({
     : false;
 
   // Check if user can join this specific squad
-  // Users can join squads even with future registration dates
   const canJoinThisSquad = !isUserMember && showJoinButton;
 
-  // Debug logging for button logic
-  // console.log('SquadCard Button Logic Debug:', {
-  //   isUserMember,
-  //   isRegistrationFuture,
-  //   showJoinButton,
-  //   canJoinThisSquad,
-  //   registrationDate: squad?.voter_registration_date,
-  //   currentDate: new Date().toISOString(),
-  //   squadId: squad?.id,
-  //   squadName: squad?.name,
-  //   componentLocation: 'Dashboard'
-  // });
   const getButtonContent = () => {
     if (isUserMember) {
       return {
@@ -75,7 +49,7 @@ const SquadCard = ({
 
     if (isRegistrationFuture) {
       return {
-        text: "Join Squad (Registration Pending)",
+        text: "Join (Pending)",
         variant: "outline",
         icon: UserPlus,
         disabled: false,
@@ -117,89 +91,89 @@ const SquadCard = ({
       className={cardClassName}
       onClick={handleCardClick}
     >
-      <Card className={`h-full flex flex-col ${isClickable ? 'ring-2 ring-blue-200 hover:ring-blue-300' : ''} transition-all duration-200`}>
-        <div className="p-6 flex-1">
-          <div className="flex items-start justify-between mb-4">
-            <div className="flex items-center space-x-2">
-              <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full flex items-center justify-center">
-                <Users className="h-5 w-5 text-white" />
+      <Card className={`h-full flex flex-col ${isClickable ? 'ring-1 sm:ring-2 ring-blue-200 hover:ring-blue-300' : ''} transition-all duration-200`}>
+        <div className="p-4 sm:p-6 flex-1">
+          <div className="flex items-start justify-between mb-3 sm:mb-4">
+            <div className="flex items-center space-x-2 min-w-0 flex-1">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full flex items-center justify-center flex-shrink-0">
+                <Users className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
               </div>
-              <div>
-                <h3 className="font-semibold text-gray-900">{squad.name}</h3>
-                <div className="flex items-center text-sm text-gray-600">
-                  <MapPin className="h-4 w-4 mr-1" />
-                  {squad.county}
+              <div className="min-w-0 flex-1">
+                <h3 className="font-semibold text-gray-900 text-sm sm:text-base truncate">{squad.name}</h3>
+                <div className="flex items-center text-xs sm:text-sm text-gray-600">
+                  <MapPin className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+                  <span className="truncate">{squad.county}</span>
                 </div>
               </div>
             </div>
-            <div className="flex flex-col items-end space-y-2">
+            <div className="flex flex-col items-end space-y-1 sm:space-y-2 ml-2">
               {isOwner && (
-                <div className="bg-gradient-to-r from-purple-500 via-pink-500 to-purple-600 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-xl border-2 border-white flex items-center space-x-2 animate-pulse">
-                  <Crown className="w-4 h-4 fill-current" />
-                  <span>Owner</span>
+                <div className="bg-gradient-to-r from-purple-500 via-pink-500 to-purple-600 text-white px-2 sm:px-3 py-1 sm:py-1.5 rounded text-xs font-bold shadow-lg border border-white flex items-center space-x-1 animate-pulse">
+                  <Crown className="w-3 h-3 sm:w-3 sm:h-3 fill-current" />
+                  <span className="hidden xs:inline">Owner</span>
                 </div>
               )}
               {isUserMember && !isOwner && (
-                <div className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white px-4 py-2.5 rounded-full text-sm font-bold shadow-xl border-2 border-white flex items-center space-x-2 animate-bounce">
-                  <Star className="w-4 h-4 fill-current" />
-                  <span>You're a Member</span>
+                <div className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white px-2 sm:px-3 py-1 sm:py-1.5 rounded-full text-xs font-bold shadow-lg border border-white flex items-center space-x-1">
+                  <Star className="w-3 h-3 sm:w-3 sm:h-3 fill-current" />
+                  <span className="hidden xs:inline">Member</span>
                 </div>
               )}
               {/* Click indicator for clickable cards */}
               {isClickable && (
-                <div className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-xs font-medium flex items-center space-x-1 opacity-75">
-                  <Eye className="w-3 h-3" />
-                  <span>{isOwner ? 'Manage' : 'View'}</span>
+                <div className="bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded-full text-xs font-medium flex items-center space-x-1 opacity-75">
+                  <Eye className="w-2 h-2 sm:w-3 sm:h-3" />
+                  <span className="hidden xs:inline">{isOwner ? 'Manage' : 'View'}</span>
                 </div>
               )}
             </div>
           </div>
 
-          <p className="text-gray-600 text-sm mb-4 line-clamp-3">
+          <p className="text-gray-600 text-xs sm:text-sm mb-3 sm:mb-4 line-clamp-3">
             {squad.description}
           </p>
 
           {squad.registration_center && (
-            <div className="mb-3 p-2 bg-blue-50 rounded-lg">
-              <div className="flex items-center text-sm text-blue-800">
-                <MapPin className="h-4 w-4 mr-2" />
+            <div className="mb-2 sm:mb-3 p-1.5 sm:p-2 bg-blue-50 rounded-lg">
+              <div className="flex items-center text-xs sm:text-sm text-blue-800">
+                <MapPin className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
                 <span className="font-medium">Registration Center:</span>
               </div>
-              <div className="text-sm text-blue-700 ml-6">
-                <div className="font-medium">{squad.registration_center.name}</div>
-                <div>{squad.registration_center.location || squad.registration_center.address}, {squad.registration_center.county}</div>
+              <div className="text-xs sm:text-sm text-blue-700 ml-4 sm:ml-6">
+                <div className="font-medium truncate">{squad.registration_center.name}</div>
+                <div className="truncate">{squad.registration_center.location || squad.registration_center.address}, {squad.registration_center.county}</div>
                 {squad.registration_center.constituency && (
-                  <div className="text-blue-600">Constituency: {squad.registration_center.constituency}</div>
+                  <div className="text-blue-600 truncate">Constituency: {squad.registration_center.constituency}</div>
                 )}
                 {squad.registration_center.ward && (
-                  <div className="text-blue-600">Ward: {squad.registration_center.ward}</div>
+                  <div className="text-blue-600 truncate">Ward: {squad.registration_center.ward}</div>
                 )}
                 {squad.registration_center.polling_station_name && (
-                  <div className="text-green-600">Polling Station: {squad.registration_center.polling_station_name}</div>
+                  <div className="text-green-600 truncate">Polling: {squad.registration_center.polling_station_name}</div>
                 )}
               </div>
             </div>
           )}
 
-          <div className="flex items-center justify-between text-sm text-gray-500 mb-4">
+          <div className="flex items-center justify-between text-xs sm:text-sm text-gray-500 mb-3 sm:mb-4">
             <span>{squad.member_count || 0} members</span>
-            <span>
+            <span className="text-right">
               {squad.max_members !== null && squad.max_members > 0
-                ? `${squad.remaining_slots} of ${squad.max_members} slots left`
+                ? `${squad.remaining_slots} of ${squad.max_members} slots`
                 : ''}
             </span>
           </div>
 
           {squad.voter_registration_date && (
-            <div className={`mb-3 p-2 rounded-lg ${isRegistrationFuture ? 'bg-orange-50' : 'bg-green-50'}`}>
-              <div className="flex items-center text-sm text-green-800">
-                <Calendar className="h-4 w-4 mr-2" />
+            <div className={`mb-2 sm:mb-3 p-1.5 sm:p-2 rounded-lg ${isRegistrationFuture ? 'bg-orange-50' : 'bg-green-50'}`}>
+              <div className="flex items-center text-xs sm:text-sm text-green-800">
+                <Calendar className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
                 <span className="font-medium">Registration Date:</span>
               </div>
-              <div className="text-sm text-green-700 ml-6">
+              <div className="text-xs sm:text-sm text-green-700 ml-4 sm:ml-6">
                 {new Date(squad.voter_registration_date).toLocaleDateString()}
                 {isRegistrationFuture && (
-                  <span className="ml-2 text-xs text-orange-600 font-medium">
+                  <span className="ml-1 sm:ml-2 text-xs text-orange-600 font-medium">
                     (Upcoming)
                   </span>
                 )}
@@ -209,22 +183,23 @@ const SquadCard = ({
         </div>
 
         {showJoinButton && !isUserMember && (
-          <div className="p-6 pt-0">
+          <div className="p-4 sm:p-6 pt-0">
             <Button
               onClick={buttonContent.onClick}
               loading={isJoining && canJoinThisSquad}
               disabled={isJoining || buttonContent.disabled}
-              className="w-full"
+              className="w-full text-xs sm:text-sm py-2"
               variant={buttonContent.variant}
+              size="sm"
             >
-              <buttonContent.icon className="h-4 w-4 mr-2" />
+              <buttonContent.icon className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
               {buttonContent.text}
             </Button>
 
             {/* Show info about registration date for future registrations */}
             {isRegistrationFuture && (
-              <p className="text-xs text-orange-600 mt-2 text-center">
-                Registration available from {new Date(squad?.voter_registration_date).toLocaleDateString()}
+              <p className="text-xs text-orange-600 mt-1 sm:mt-2 text-center">
+                Available from {new Date(squad?.voter_registration_date).toLocaleDateString()}
               </p>
             )}
           </div>
@@ -232,16 +207,17 @@ const SquadCard = ({
 
         {/* Show management/view button for members when card is clickable */}
         {isUserMember && isClickable && (
-          <div className="p-6 pt-0">
+          <div className="p-4 sm:p-6 pt-0">
             <Button
               onClick={(e) => {
                 e.stopPropagation();
                 buttonContent.onClick();
               }}
-              className="w-full"
+              className="w-full text-xs sm:text-sm py-2"
               variant={buttonContent.variant}
+              size="sm"
             >
-              <buttonContent.icon className="h-4 w-4 mr-2" />
+              <buttonContent.icon className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
               {buttonContent.text}
             </Button>
           </div>
@@ -249,8 +225,8 @@ const SquadCard = ({
 
         {/* Show disabled state message for owners with future registration */}
         {!showJoinButton && !isUserMember && isOwner && (
-          <div className="p-6 pt-0">
-            <div className="w-full p-3 bg-orange-50 border border-orange-200 rounded-lg text-center">
+          <div className="p-4 sm:p-6 pt-0">
+            <div className="w-full p-2 sm:p-3 bg-orange-50 border border-orange-200 rounded-lg text-center">
               <p className="text-xs text-orange-700">
                 You are the owner of a squad with a future registration date.
                 You cannot join other squads until the registration date passes.

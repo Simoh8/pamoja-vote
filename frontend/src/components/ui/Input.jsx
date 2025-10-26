@@ -17,7 +17,7 @@ const Input = ({
   return (
     <div className="w-full">
       {label && (
-        <label htmlFor={id} className="block text-sm font-medium text-gray-700 mb-1.5">
+        <label htmlFor={id} className="block text-sm sm:text-base font-medium text-gray-700 mb-1.5">
           {label}
         </label>
       )}
@@ -32,13 +32,13 @@ const Input = ({
           type={type}
           value={value}
           onChange={onChange}
-          className={`block w-full px-4 py-3 ${StartIcon ? 'pl-10' : 'pl-4'} ${
-            EndIcon ? 'pr-10' : 'pr-4'
+          className={`block w-full px-3 py-2.5 sm:px-4 sm:py-3 ${StartIcon ? 'pl-10' : 'pl-3 sm:pl-4'} ${
+            EndIcon ? 'pr-10' : 'pr-3 sm:pr-4'
           } border ${
             error
               ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
               : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
-          } rounded-xl bg-white/50 backdrop-blur-sm placeholder-gray-400 focus:outline-none focus:ring-2 transition-all duration-200 ${className}`}
+          } rounded-lg sm:rounded-xl bg-white/50 backdrop-blur-sm placeholder-gray-400 focus:outline-none focus:ring-2 transition-all duration-200 text-sm sm:text-base min-h-[44px] ${className}`}
           placeholder={placeholder}
           {...props}
         />

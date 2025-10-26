@@ -27,8 +27,8 @@ const Navbar = () => {
   if (!isAuthenticated) {
     return (
       <nav className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8">
+          <div className="flex justify-between items-center h-14 sm:h-16">
             {/* Logo */}
             <button
               onClick={() => navigate('/')}
@@ -56,8 +56,8 @@ const Navbar = () => {
   // Authenticated user navbar
   return (
     <nav className="bg-white shadow-sm border-b">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8">
+        <div className="flex justify-between items-center h-14 sm:h-16">
           {/* Logo */}
           <button
             onClick={() => navigate('/')}
@@ -78,21 +78,21 @@ const Navbar = () => {
           </div> */}
 
           {/* User actions */}
-          <div className="flex items-center space-x-4">
-            <span className="text-sm text-gray-700">
+          <div className="flex items-center space-x-2 sm:space-x-4">
+            <span className="text-xs sm:text-sm text-gray-700 hidden sm:inline">
               Hey, {user?.first_name || user?.phone_number} 👋
             </span>
 
             <button
               onClick={handleProfileClick}
-              className="p-2 text-gray-600 hover:text-gray-900 rounded-full hover:bg-gray-100"
+              className="p-2 text-gray-600 hover:text-gray-900 rounded-full hover:bg-gray-100 min-w-[44px] min-h-[44px] flex items-center justify-center"
             >
               <User className="w-5 h-5" />
             </button>
 
             <button
               onClick={handleLogout}
-              className="p-2 text-gray-600 hover:text-gray-900 rounded-full hover:bg-gray-100"
+              className="p-2 text-gray-600 hover:text-gray-900 rounded-full hover:bg-gray-100 min-w-[44px] min-h-[44px] flex items-center justify-center"
             >
               <LogOut className="w-5 h-5" />
             </button>

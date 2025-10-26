@@ -110,19 +110,19 @@ const CreateSquad = () => {
   // Modern toast configurations
   const toastConfig = {
     success: {
-      icon: <CheckCircle className="w-5 h-5 text-green-500" />,
+      icon: <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 text-green-500" />,
       className: "border-l-4 border-l-green-500 bg-white shadow-lg",
     },
     error: {
-      icon: <AlertCircle className="w-5 h-5 text-red-500" />,
+      icon: <AlertCircle className="w-4 h-4 sm:w-5 sm:h-5 text-red-500" />,
       className: "border-l-4 border-l-red-500 bg-white shadow-lg",
     },
     info: {
-      icon: <Info className="w-5 h-5 text-blue-500" />,
+      icon: <Info className="w-4 h-4 sm:w-5 sm:h-5 text-blue-500" />,
       className: "border-l-4 border-l-blue-500 bg-white shadow-lg",
     },
     loading: {
-      icon: <Loader2 className="w-5 h-5 text-gray-600 animate-spin" />,
+      icon: <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600 animate-spin" />,
       className: "border-l-4 border-l-gray-500 bg-white shadow-lg",
     },
   };
@@ -132,13 +132,13 @@ const CreateSquad = () => {
     
     const config = toastConfig[type];
     const content = (
-      <div className="flex items-start space-x-3 p-2">
+      <div className="flex items-start space-x-2 sm:space-x-3 p-2">
         {config.icon}
         <div className="flex-1 min-w-0">
-          <p className="font-semibold text-gray-900 text-sm">{title}</p>
-          {message && <p className="text-gray-600 text-sm mt-1">{message}</p>}
+          <p className="font-semibold text-gray-900 text-xs sm:text-sm">{title}</p>
+          {message && <p className="text-gray-600 text-xs sm:text-sm mt-1">{message}</p>}
           {options.action && (
-            <div className="mt-3">{options.action}</div>
+            <div className="mt-2 sm:mt-3">{options.action}</div>
           )}
         </div>
       </div>
@@ -172,8 +172,6 @@ const CreateSquad = () => {
       setTimeout(() => navigate("/squad"), 1500);
     },
     onError: (err) => {
-      
-      
       // Robust error handling for different error structures
       const status = err?.status || err?.response?.status;
       const errorData = err?.response?.data || err;
@@ -207,7 +205,7 @@ const CreateSquad = () => {
               }}
               variant="outline"
               size="sm"
-              className="border-blue-200 text-blue-700 hover:bg-blue-50"
+              className="border-blue-200 text-blue-700 hover:bg-blue-50 text-xs"
             >
               Go to Squad
             </Button>
@@ -223,7 +221,7 @@ const CreateSquad = () => {
               }}
               variant="outline"
               size="sm"
-              className="border-blue-200 text-blue-700 hover:bg-blue-50"
+              className="border-blue-200 text-blue-700 hover:bg-blue-50 text-xs"
             >
               Manage Squad
             </Button>
@@ -346,10 +344,10 @@ const CreateSquad = () => {
   // Show loading state while checking membership
   if (membershipLoading || ownedSquadsLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 flex items-center justify-center p-3 sm:p-4 border-x border-gray-200/50">
         <div className="max-w-md mx-auto text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Checking your squad membership...</p>
+          <div className="animate-spin rounded-full h-10 w-10 sm:h-12 sm:w-12 border-b-2 border-blue-600 mx-auto mb-3 sm:mb-4"></div>
+          <p className="text-gray-600 text-sm sm:text-base">Checking your squad membership...</p>
         </div>
       </div>
     );
@@ -358,23 +356,23 @@ const CreateSquad = () => {
   // Prevent squad creation if user is already in a squad or owns one
   if (cannotCreateSquad) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 p-4">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 p-3 sm:p-4 border-x border-gray-200/50">
         <div className="max-w-2xl mx-auto">
-          <Card className="p-8 text-center">
-            <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <AlertCircle className="h-8 w-8 text-red-600" />
+          <Card className="p-4 sm:p-6 lg:p-8 text-center border border-gray-200/50">
+            <div className="w-12 h-12 sm:w-14 sm:h-14 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4 border border-red-200">
+              <AlertCircle className="h-6 w-6 sm:h-7 sm:w-7 text-red-600" />
             </div>
 
-            <h1 className="text-2xl font-bold text-gray-900 mb-4">Cannot Create Squad</h1>
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-900 mb-3 sm:mb-4">Cannot Create Squad</h1>
 
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-              <p className="text-red-800 font-medium mb-2">
+            <div className="bg-red-50 border border-red-200 rounded-lg p-3 sm:p-4 mb-4 sm:mb-6">
+              <p className="text-red-800 font-medium text-sm sm:text-base mb-1 sm:mb-2">
                 {hasJoinedSquad
                   ? "You are already a member of a squad"
                   : "You are already the owner of a squad"
                 }
               </p>
-              <p className="text-red-700 text-sm">
+              <p className="text-red-700 text-xs sm:text-sm">
                 {hasJoinedSquad
                   ? `You are currently a member of "${userMembership?.squad?.name || 'a squad'}". You cannot create a new squad while being a member of another squad.`
                   : `You are already the owner of "${ownedSquads?.[0]?.name || 'a squad'}". You cannot create another squad while owning an existing squad.`
@@ -382,11 +380,11 @@ const CreateSquad = () => {
               </p>
             </div>
 
-            <div className="space-y-3">
+            <div className="space-y-2 sm:space-y-3">
               {hasJoinedSquad ? (
                 <Button
                   onClick={() => navigate("/squad")}
-                  className="w-full"
+                  className="w-full text-sm sm:text-base py-2"
                 >
                   <Users className="h-4 w-4 mr-2" />
                   Go to Your Squad
@@ -394,7 +392,7 @@ const CreateSquad = () => {
               ) : (
                 <Button
                   onClick={() => navigate("/squad")}
-                  className="w-full"
+                  className="w-full text-sm sm:text-base py-2"
                 >
                   <Users className="h-4 w-4 mr-2" />
                   Manage Your Squad
@@ -404,7 +402,7 @@ const CreateSquad = () => {
               <Button
                 onClick={() => navigate("/join-squad")}
                 variant="outline"
-                className="w-full"
+                className="w-full text-sm sm:text-base py-2"
               >
                 Browse Other Squads
               </Button>
@@ -412,14 +410,14 @@ const CreateSquad = () => {
               <Button
                 onClick={() => navigate("/")}
                 variant="ghost"
-                className="w-full"
+                className="w-full text-sm sm:text-base py-2"
               >
                 <ArrowLeft className="h-4 w-4 mr-2" />
                 Back to Dashboard
               </Button>
             </div>
 
-            <div className="mt-6 pt-4 border-t border-gray-200">
+            <div className="mt-4 sm:mt-6 pt-3 sm:pt-4 border-t border-gray-200">
               <p className="text-xs text-gray-500">
                 {hasJoinedSquad
                   ? "To create a new squad, you must first leave your current squad."
@@ -434,31 +432,31 @@ const CreateSquad = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 p-4">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 p-3 sm:p-4 border-x border-gray-200/50">
       <div className="max-w-2xl mx-auto">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="text-center mb-8"
+          className="text-center mb-6 sm:mb-8 border-b border-gray-200/50 pb-4 sm:pb-6"
         >
-          <div className="w-16 h-16 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
-            <Plus className="h-8 w-8 text-white" />
+          <div className="w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl sm:rounded-2xl flex items-center justify-center mx-auto mb-3 sm:mb-4 border-2 border-white shadow-lg">
+            <Plus className="h-5 w-5 sm:h-7 sm:w-7 text-white" />
           </div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Create Squad</h1>
-          <p className="text-gray-600">Start your own group and lead the movement</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">Create Squad</h1>
+          <p className="text-gray-600 text-sm sm:text-base">Start your own group and lead the movement</p>
         </motion.div>
 
-        <Card className="p-6">
+        <Card className="p-4 sm:p-6 border border-gray-200/50">
           {error && (
             <Alert type="error" message={error} onDismiss={() => setError("")}>
               {suggestedSquad && (
-                <div className="mt-3">
+                <div className="mt-2 sm:mt-3">
                   <Button
                     onClick={() => navigate("/join-squad")}
                     variant="outline"
                     size="sm"
-                    className="border-green-200 text-green-700 hover:bg-green-50"
+                    className="border-green-200 text-green-700 hover:bg-green-50 text-xs"
                   >
                     Join "{suggestedSquad}" Squad
                   </Button>
@@ -474,7 +472,7 @@ const CreateSquad = () => {
             />
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
             <Input
               id="name"
               label="Squad Name *"
@@ -482,16 +480,17 @@ const CreateSquad = () => {
               onChange={(e) => handleChange("name", e.target.value)}
               placeholder="Enter a unique name for your squad"
               required
+              className="text-sm sm:text-base"
             />
 
             <div>
               <label className="block text-sm font-medium mb-2">Description *</label>
               <textarea
-                rows={4}
+                rows={3}
                 value={formData.description}
                 onChange={(e) => handleChange("description", e.target.value)}
                 placeholder="Describe your squad's mission, goals, and what you hope to achieve together..."
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 resize-none placeholder-gray-400"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 resize-none placeholder-gray-400 text-sm sm:text-base"
                 required
               />
             </div>
@@ -505,6 +504,7 @@ const CreateSquad = () => {
               min={new Date().toISOString().split('T')[0]}
               placeholder="Select target registration date"
               required
+              className="text-sm sm:text-base"
             />
 
             {/* Registration center autocomplete */}
@@ -523,40 +523,42 @@ const CreateSquad = () => {
                   }}
                   onFocus={() => setShowCenterDropdown(true)}
                   placeholder="Search by center name, location, or constituency..."
-                  className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 placeholder-gray-400"
+                  className="w-full px-3 py-2 pr-8 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 placeholder-gray-400 text-sm sm:text-base"
                   disabled={centersLoading || centersError}
                 />
-                <ChevronDown className="absolute right-2 top-2.5 h-4 w-4 text-gray-400" />
+                <ChevronDown className="absolute right-2 top-2.5 h-3 w-3 sm:h-4 sm:w-4 text-gray-400" />
               </div>
 
               {showCenterDropdown && (
-                <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 sm:max-h-60 overflow-y-auto">
                   {centersLoading ? (
-                    <div className="px-3 py-2 text-sm text-gray-500">
+                    <div className="px-3 py-2 text-xs sm:text-sm text-gray-500">
                       <div className="flex items-center">
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-2"></div>
+                        <div className="animate-spin rounded-full h-3 w-3 sm:h-4 sm:w-4 border-b-2 border-blue-600 mr-2"></div>
                         Loading registration centers...
                       </div>
                     </div>
                   ) : filteredCenters.length === 0 ? (
-                    <div className="px-3 py-2 text-sm text-gray-500">
+                    <div className="px-3 py-2 text-xs sm:text-sm text-gray-500">
                       {centerSearchTerm
                         ? "No centers found. Try a different search term."
                         : "Start typing to search for registration centers..."}
                     </div>
                   ) : (
-                    filteredCenters.slice(0, 10).map((center) => (
+                    filteredCenters.slice(0, 8).map((center) => (
                       <button
                         key={center.id}
                         type="button"
                         onClick={() => handleCenterSelect(center)}
-                        className="w-full text-left px-3 py-2 hover:bg-blue-50 transition-colors text-sm border-b border-gray-100 last:border-b-0"
+                        className="w-full text-left px-3 py-2 hover:bg-blue-50 transition-colors text-xs sm:text-sm border-b border-gray-100 last:border-b-0"
                       >
-                        <div className="font-medium text-gray-900">{center.name}</div>
+                        <div className="font-medium text-gray-900 truncate">{center.name}</div>
                         <div className="text-xs text-gray-500 flex items-center mt-1">
-                          <MapPin className="h-3 w-3 mr-1" />
-                          {center.location}, {center.county}
-                          {center.constituency && ` • ${center.constituency}`}
+                          <MapPin className="h-2 w-2 sm:h-3 sm:w-3 mr-1" />
+                          <span className="truncate">
+                            {center.location}, {center.county}
+                            {center.constituency && ` • ${center.constituency}`}
+                          </span>
                         </div>
                       </button>
                     ))
@@ -572,7 +574,7 @@ const CreateSquad = () => {
                   id="county"
                   value={formData.county}
                   onChange={(e) => handleChange("county", e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm sm:text-base"
                   required
                 >
                   <option value="">Select your county</option>
@@ -591,9 +593,10 @@ const CreateSquad = () => {
               onChange={(e) => handleChange("goal_count", e.target.value)}
               min="2"
               placeholder="e.g., 10 (leave empty for no limit)"
+              className="text-sm sm:text-base"
             />
 
-            <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+            <div className="p-3 sm:p-4 bg-gray-50 rounded-lg border border-gray-200">
               <label className="flex items-center">
                 <input
                   type="checkbox"
@@ -601,30 +604,31 @@ const CreateSquad = () => {
                   onChange={(e) => handleChange("is_public", e.target.checked)}
                   className="rounded border-gray-300 text-blue-600 focus:ring focus:ring-blue-200"
                 />
-                <span className="ml-2 text-sm text-gray-700 font-medium">
+                <span className="ml-2 text-xs sm:text-sm text-gray-700 font-medium">
                   Make squad public (visible to everyone)
                 </span>
               </label>
-              <p className="text-xs text-gray-500 mt-2 ml-6">
+              <p className="text-xs text-gray-500 mt-1 sm:mt-2 ml-6">
                 Public squads can be discovered and joined by other users. Private squads require invitations.
               </p>
             </div>
 
-            <div className="flex gap-4 pt-4 border-t border-gray-200">
+            <div className="flex flex-col xs:flex-row gap-3 pt-4 border-t border-gray-200">
               <Button
                 type="button"
                 variant="ghost"
                 onClick={() => navigate("/join-squad")}
                 disabled={createSquadMutation.isPending}
+                className="text-xs sm:text-sm py-2"
               >
-                <ArrowLeft className="h-4 w-4 mr-2" /> Back
+                <ArrowLeft className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" /> Back
               </Button>
               <Button
                 type="submit"
                 loading={createSquadMutation.isPending}
-                className="flex-1"
+                className="flex-1 text-xs sm:text-sm py-2"
               >
-                <Users className="h-4 w-4 mr-2" />
+                <Users className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
                 {createSquadMutation.isPending ? "Creating Squad..." : "Create Squad"}
               </Button>
             </div>

@@ -30,7 +30,6 @@ const MarkerCluster = ({ pollingStations, visibleFeatures = null }) => {
       const MarkerClusterGroup = await loadMarkerCluster();
 
       if (!MarkerClusterGroup) {
-        console.warn('MarkerCluster not loaded, using regular markers');
         return;
       }
 

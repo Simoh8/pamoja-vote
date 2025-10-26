@@ -200,28 +200,28 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8 py-3 sm:py-6 lg:py-8 border-x border-gray-200/50">
       {/* Welcome Section */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        className="mb-8"
+        className="mb-6 sm:mb-8"
       >
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">
+        <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 mb-2">
           Welcome back, {user?.first_name || 'Voter'}! 👋
         </h1>
-        <p className="text-gray-600">
+        <p className="text-gray-600 text-sm sm:text-base">
           Ready to make your voice heard? Let's get registered together.
         </p>
 
         {/* Membership Status Info */}
         {(hasJoinedSquad || isOwnerOfAnySquad) && (
-          <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="font-medium text-blue-900">Squad Status</h3>
-                <p className="text-sm text-blue-700 mt-1">
+          <div className="mt-4 p-3 sm:p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="flex-1 min-w-0">
+                <h3 className="font-medium text-blue-900 text-sm sm:text-base">Squad Status</h3>
+                <p className="text-xs sm:text-sm text-blue-700 mt-1">
                   {hasJoinedSquad
                     ? `You're currently a member of ${userCurrentSquad?.name || 'a squad'}.${hasFutureRegistration ? ' The registration date is in the future.' : ''}`
                     : `You are the owner of ${ownedSquads?.length || 0} squad${ownedSquads?.length !== 1 ? 's' : ''} but not currently a member of any.`
@@ -236,12 +236,12 @@ const Dashboard = () => {
                   {isOwnerOfAnySquad && 'As an owner, you can always manage your squad membership.'}
                 </p>
               </div>
-              <div className="flex space-x-2">
+              <div className="flex flex-col xs:flex-row gap-2">
                 <Button
                   onClick={handleRefreshData}
                   variant="outline"
                   size="sm"
-                  className="border-blue-300 text-blue-700 hover:bg-blue-50"
+                  className="border-blue-300 text-blue-700 hover:bg-blue-50 text-xs"
                 >
                   Refresh Data
                 </Button>
@@ -250,7 +250,7 @@ const Dashboard = () => {
                     onClick={() => clearMembershipMutation.mutate()}
                     variant="outline"
                     size="sm"
-                    className="border-red-300 text-red-700 hover:bg-red-50"
+                    className="border-red-300 text-red-700 hover:bg-red-50 text-xs"
                     disabled={clearMembershipMutation.isPending}
                   >
                     {clearMembershipMutation.isPending ? 'Clearing...' : 'Reset Membership'}
@@ -262,88 +262,87 @@ const Dashboard = () => {
         )}
       </motion.div>
 
-      {/* Quick Actions */}
+  {/* Quick Actions */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.1 }}
-        className="mb-8"
+        className="mb-6 sm:mb-8"
       >
-        <h2 className="text-xl font-bold text-gray-900 mb-4">Quick Actions</h2>
-        <div className={`grid gap-6 ${canCreateSquad ? 'md:grid-cols-3' : 'md:grid-cols-2'} ${!canCreateSquad ? 'max-w-2xl mx-auto' : ''}`}>
+        <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-3 sm:mb-4">Quick Actions</h2>
+        <div className={`flex flex-row flex-wrap justify-center gap-3 sm:gap-4 ${!canCreateSquad ? 'max-w-2xl mx-auto' : ''}`}>
           {/* Join Squad Card */}
-          <Card className="p-6 hover:shadow-lg transition-shadow cursor-pointer" onClick={handleJoinSquad}>
-            <div className="flex items-center">
-              <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mr-4">
-                <Users className="w-6 h-6 text-blue-600" />
+          <Card className="p-3 sm:p-4 hover:shadow-lg transition-shadow cursor-pointer border border-gray-200/50 flex-1 min-w-[140px] max-w-[200px]" onClick={handleJoinSquad}>
+            <div className="flex flex-col items-center text-center">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-blue-100 rounded-full flex items-center justify-center mb-2 flex-shrink-0 border border-blue-200">
+                <Users className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" />
               </div>
-              <div>
-                <h3 className="font-semibold text-gray-900">Join a Squad</h3>
-                <p className="text-sm text-gray-600">Team up with friends</p>
+              <div className="min-w-0 flex-1">
+                <h3 className="font-semibold text-gray-900 text-sm sm:text-base truncate">Join a Squad</h3>
+                <p className="text-xs sm:text-sm text-gray-600 truncate">Team up with friends</p>
               </div>
             </div>
           </Card>
 
           {/* Create Squad Card - Conditionally Rendered */}
           {canCreateSquad && (
-            <Card className="p-6 hover:shadow-lg transition-shadow cursor-pointer" onClick={handleCreateSquad}>
-              <div className="flex items-center">
-                <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mr-4">
-                  <Plus className="w-6 h-6 text-green-600" />
+            <Card className="p-3 sm:p-4 hover:shadow-lg transition-shadow cursor-pointer border border-gray-200/50 flex-1 min-w-[140px] max-w-[200px]" onClick={handleCreateSquad}>
+              <div className="flex flex-col items-center text-center">
+                <div className="w-8 h-8 sm:w-10 sm:h-10 bg-green-100 rounded-full flex items-center justify-center mb-2 flex-shrink-0 border border-green-200">
+                  <Plus className="w-4 h-4 sm:w-5 sm:h-5 text-green-600" />
                 </div>
-                <div>
-                  <h3 className="font-semibold text-gray-900">Create Squad</h3>
-                  <p className="text-sm text-gray-600">Start your own group</p>
+                <div className="min-w-0 flex-1">
+                  <h3 className="font-semibold text-gray-900 text-sm sm:text-base truncate">Create Squad</h3>
+                  <p className="text-xs sm:text-sm text-gray-600 truncate">Start your own group</p>
                 </div>
               </div>
             </Card>
           )}
 
           {/* Find Centers Card */}
-          <Card className="p-6 hover:shadow-lg transition-shadow cursor-pointer" onClick={handleFindCenters}>
-            <div className="flex items-center">
-              <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center mr-4">
-                <MapPin className="w-6 h-6 text-orange-600" />
+          <Card className="p-3 sm:p-4 hover:shadow-lg transition-shadow cursor-pointer border border-gray-200/50 flex-1 min-w-[140px] max-w-[200px]" onClick={handleFindCenters}>
+            <div className="flex flex-col items-center text-center">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-orange-100 rounded-full flex items-center justify-center mb-2 flex-shrink-0 border border-orange-200">
+                <MapPin className="w-4 h-4 sm:w-5 sm:h-5 text-orange-600" />
               </div>
-              <div>
-                <h3 className="font-semibold text-gray-900">Find Centers</h3>
-                <p className="text-sm text-gray-600">Locate registration spots</p>
+              <div className="min-w-0 flex-1">
+                <h3 className="font-semibold text-gray-900 text-sm sm:text-base truncate">Find Centers</h3>
+                <p className="text-xs sm:text-sm text-gray-600 truncate">Locate registration spots</p>
               </div>
             </div>
           </Card>
         </div>
       </motion.div>
-
       {/* All Squads */}
       {(userMemberSquads.length > 0 || (!squadsLoading && !membershipLoading && !ownedSquadsLoading)) && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.2 }}
-          className="mb-8"
+          className="mb-6 sm:mb-8"
         >
-          <h2 className="text-xl font-bold text-gray-900 mb-4">
+          <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-3 sm:mb-4">
             {hasJoinedSquad ? 'Your Squad' : 'Available Squads'}
           </h2>
 
           {hasJoinedSquad && userMemberSquads.length === 0 && !mySquadsLoading && (
-            <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="font-medium text-blue-900">Squad Membership Detected</h3>
-                  <p className="text-sm text-blue-700 mt-1">
+            <div className="mb-4 p-3 sm:p-4 bg-blue-50 border border-blue-200 rounded-lg">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-medium text-blue-900 text-sm sm:text-base">Squad Membership Detected</h3>
+                  <p className="text-xs sm:text-sm text-blue-700 mt-1">
                     You're a member of a squad, but we couldn't load the squad details.
                   </p>
                   <p className="text-xs text-blue-600 mt-1">
                     Try refreshing the page or contact support if this persists.
                   </p>
                 </div>
-                <div className="flex space-x-2">
+                <div className="flex flex-col xs:flex-row gap-2">
                   <Button
                     onClick={handleRefreshSquadData}
                     variant="outline"
                     size="sm"
-                    className="border-blue-300 text-blue-700 hover:bg-blue-50"
+                    className="border-blue-300 text-blue-700 hover:bg-blue-50 text-xs"
                   >
                     Refresh Data
                   </Button>
@@ -351,7 +350,7 @@ const Dashboard = () => {
                     onClick={() => navigate('/squad')}
                     variant="outline"
                     size="sm"
-                    className="border-green-300 text-green-700 hover:bg-green-50"
+                    className="border-green-300 text-green-700 hover:bg-green-50 text-xs"
                   >
                     View Squad Page
                   </Button>
@@ -360,7 +359,7 @@ const Dashboard = () => {
             </div>
           )}
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
             {(hasJoinedSquad ? userMemberSquads : userSquads).map((squad) => (
               <SquadCard
                 key={squad.id}
@@ -383,29 +382,29 @@ const Dashboard = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.3 }}
         >
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-bold text-gray-900">Nearby Registration Centers</h2>
+          <div className="flex flex-col xs:flex-row xs:justify-between xs:items-center gap-2 mb-3 sm:mb-4">
+            <h2 className="text-lg sm:text-xl font-bold text-gray-900">Nearby Registration Centers</h2>
             <button
               onClick={() => navigate('/find-centers')}
-              className="text-primary hover:text-primary/80 text-sm font-medium"
+              className="text-primary hover:text-primary/80 text-xs sm:text-sm font-medium self-start xs:self-auto"
             >
               View all
             </button>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
             {nearbyCenters.slice(0, 3).map((center) => (
-              <Card key={center.id} className="p-4">
-                <h3 className="font-semibold text-gray-900 mb-2">{center.name}</h3>
-                <p className="text-sm text-gray-600 mb-2">{center.location || center.address}</p>
+              <Card key={center.id} className="p-3 sm:p-4 border border-gray-200/50">
+                <h3 className="font-semibold text-gray-900 text-sm sm:text-base mb-2 truncate">{center.name}</h3>
+                <p className="text-xs sm:text-sm text-gray-600 mb-2 truncate">{center.location || center.address}</p>
                 <p className="text-xs text-gray-500 mb-2">{center.county}</p>
                 {center.constituency && (
-                  <p className="text-xs text-blue-600 mb-1">Constituency: {center.constituency}</p>
+                  <p className="text-xs text-blue-600 mb-1 truncate">Constituency: {center.constituency}</p>
                 )}
                 {center.ward && (
-                  <p className="text-xs text-blue-600 mb-1">Ward: {center.ward}</p>
+                  <p className="text-xs text-blue-600 mb-1 truncate">Ward: {center.ward}</p>
                 )}
                 {center.polling_station_name && (
-                  <p className="text-xs text-green-600 mb-2">Polling Station: {center.polling_station_name}</p>
+                  <p className="text-xs text-green-600 mb-2 truncate">Polling Station: {center.polling_station_name}</p>
                 )}
               </Card>
             ))}
@@ -419,15 +418,15 @@ const Dashboard = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.3 }}
-          className="mb-8"
+          className="mb-6 sm:mb-8"
         >
-          <Card className="p-6 text-center bg-blue-50 border-blue-200">
-            <MapPin className="h-12 w-12 text-blue-400 mx-auto mb-3" />
-            <h3 className="font-semibold text-gray-900 mb-2">Location Services Coming Soon!</h3>
-            <p className="text-sm text-gray-600 mb-4">
+          <Card className="p-4 sm:p-6 text-center bg-blue-50 border border-blue-200">
+            <MapPin className="h-6 w-6 sm:h-8 sm:w-8 text-blue-400 mx-auto mb-2 sm:mb-3" />
+            <h3 className="font-semibold text-gray-900 text-sm sm:text-base mb-2">Location Services Coming Soon!</h3>
+            <p className="text-xs sm:text-sm text-gray-600 mb-3 sm:mb-4">
               We're working on adding location-based center search. Browse all centers instead!
             </p>
-            <Button onClick={() => navigate('/find-centers')} variant="outline">
+            <Button onClick={() => navigate('/find-centers')} variant="outline" size="sm" className="text-xs sm:text-sm">
               Browse All Centers
             </Button>
           </Card>
@@ -436,8 +435,8 @@ const Dashboard = () => {
 
       {/* Loading States */}
       {(squadsLoading || centersLoading || membershipLoading || mySquadsLoading || ownedSquadsLoading) && (
-        <div className="flex justify-center py-8">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <div className="flex justify-center py-6 sm:py-8">
+          <div className="animate-spin rounded-full h-5 w-5 sm:h-6 sm:w-6 border-b-2 border-primary"></div>
         </div>
       )}
 
@@ -446,13 +445,13 @@ const Dashboard = () => {
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="text-center py-12"
+          className="text-center py-8 sm:py-12 border-t border-gray-200/50 pt-8 sm:pt-12"
         >
-          <Users className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">
+          <Users className="w-10 h-10 sm:w-12 sm:h-12 text-gray-300 mx-auto mb-3 sm:mb-4" />
+          <h3 className="text-sm sm:text-base font-semibold text-gray-900 mb-2">
             {hasJoinedSquad ? 'No squads found' : 'No squads yet'}
           </h3>
-          <p className="text-gray-600 mb-4">
+          <p className="text-xs sm:text-sm text-gray-600 mb-3 sm:mb-4 max-w-md mx-auto">
             {hasJoinedSquad
               ? hasFutureRegistration
                 ? 'You\'re already part of an active squad. Wait for the registration date or leave your current squad to create a new one.'
@@ -460,7 +459,7 @@ const Dashboard = () => {
               : 'Join a squad or create your own to start organizing with friends!'
             }
           </p>
-          <Button onClick={canCreateSquad ? handleCreateSquad : handleJoinSquad}>
+          <Button onClick={canCreateSquad ? handleCreateSquad : handleJoinSquad} size="sm" className="text-xs sm:text-sm">
             {canCreateSquad ? 'Create Squad' : 'Browse Squads'}
           </Button>
         </motion.div>

@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
-import { MapPin, Search, Filter } from 'lucide-react';
+import { MapPin, Search, Filter, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button, Input, Card, Alert } from '../components/ui';
 import MapView from '../components/MapView';
 import { usePollingCenters } from '../hooks/usePollingCenters';
@@ -43,21 +43,21 @@ const Centers = () => {
   }, [centers]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 p-4">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 p-3 sm:p-4 border-x border-gray-200/50">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="text-center mb-8"
+          className="text-center mb-6 sm:mb-8 border-b border-gray-200/50 pb-4 sm:pb-6"
         >
-          <div className="w-16 h-16 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
-            <MapPin className="h-8 w-8 text-white" />
+          <div className="w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl sm:rounded-2xl flex items-center justify-center mx-auto mb-3 sm:mb-4 border-2 border-white shadow-lg">
+            <MapPin className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
           </div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Registration Centers</h1>
-          <p className="text-gray-600">Interactive map showing voter registration centers across Kenya</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">Registration Centers</h1>
+          <p className="text-gray-600 text-sm sm:text-base">Interactive map showing voter registration centers across Kenya</p>
           {totalCount > 0 && (
-            <p className="text-sm text-gray-500 mt-2">
+            <p className="text-xs sm:text-sm text-gray-500 mt-1 sm:mt-2">
               Showing {centers.length} of {totalCount} centers
             </p>
           )}
@@ -68,11 +68,11 @@ const Centers = () => {
           <motion.div
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="mb-6"
+            className="mb-4 sm:mb-6 border border-red-200 rounded-lg"
           >
-            <Alert variant="destructive">
-              <Alert.Title>Unable to Load Centers</Alert.Title>
-              <Alert.Description>
+            <Alert variant="destructive" className="border-0">
+              <Alert.Title className="text-sm sm:text-base">Unable to Load Centers</Alert.Title>
+              <Alert.Description className="text-xs sm:text-sm">
                 We're having trouble loading registration centers. Please check your connection or try again later.
               </Alert.Description>
             </Alert>
@@ -84,23 +84,24 @@ const Centers = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="mb-6"
+          className="mb-4 sm:mb-6 border border-gray-200/50 rounded-lg"
         >
-          <Card className="p-6">
-            <div className="flex flex-col md:flex-row gap-4">
+          <Card className="p-4 sm:p-6 border-0">
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
               <div className="flex-1">
                 <Input
                   placeholder="Search centers..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   startIcon={Search}
+                  className="text-sm sm:text-base"
                 />
               </div>
-              <div className="md:w-48">
+              <div className="sm:w-40">
                 <select
                   value={selectedCounty}
                   onChange={(e) => setSelectedCounty(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base"
                 >
                   <option value="">All Counties</option>
                   {counties.map(county => (
@@ -118,48 +119,54 @@ const Centers = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
-            className="mb-6 flex items-center justify-between"
+            className="mb-4 sm:mb-6 p-3 sm:p-4 bg-white border border-gray-200 rounded-lg"
           >
-            <div className="text-sm text-gray-600">
-              Page {currentPage} of {totalPages}
-            </div>
-
-            <div className="flex items-center space-x-2">
-              <Button
-                onClick={loadPreviousPage}
-                disabled={!hasPreviousPage || isLoading}
-                variant="outline"
-                size="sm"
-              >
-                Previous
-              </Button>
-
-              <div className="flex items-center space-x-1">
-                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                  const pageNumber = Math.max(1, Math.min(totalPages - 4, currentPage - 2)) + i;
-                  return (
-                    <Button
-                      key={pageNumber}
-                      onClick={() => goToPage(pageNumber - 1)}
-                      variant={pageNumber === currentPage ? "default" : "outline"}
-                      size="sm"
-                      className="w-8 h-8 p-0"
-                      disabled={isLoading}
-                    >
-                      {pageNumber}
-                    </Button>
-                  );
-                })}
+            <div className="flex flex-col xs:flex-row items-center justify-between gap-3">
+              <div className="text-xs sm:text-sm text-gray-600">
+                Page {currentPage} of {totalPages}
               </div>
 
-              <Button
-                onClick={loadNextPage}
-                disabled={!hasNextPage || isLoading}
-                variant="outline"
-                size="sm"
-              >
-                Next
-              </Button>
+              <div className="flex items-center space-x-1 sm:space-x-2">
+                <Button
+                  onClick={loadPreviousPage}
+                  disabled={!hasPreviousPage || isLoading}
+                  variant="outline"
+                  size="sm"
+                  className="text-xs"
+                >
+                  <ChevronLeft className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+                  Prev
+                </Button>
+
+                <div className="flex items-center space-x-1">
+                  {Array.from({ length: Math.min(3, totalPages) }, (_, i) => {
+                    const pageNumber = Math.max(1, Math.min(totalPages - 2, currentPage - 1)) + i;
+                    return (
+                      <Button
+                        key={pageNumber}
+                        onClick={() => goToPage(pageNumber - 1)}
+                        variant={pageNumber === currentPage ? "default" : "outline"}
+                        size="sm"
+                        className="w-7 h-7 sm:w-8 sm:h-8 p-0 text-xs"
+                        disabled={isLoading}
+                      >
+                        {pageNumber}
+                      </Button>
+                    );
+                  })}
+                </div>
+
+                <Button
+                  onClick={loadNextPage}
+                  disabled={!hasNextPage || isLoading}
+                  variant="outline"
+                  size="sm"
+                  className="text-xs"
+                >
+                  Next
+                  <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4 ml-1" />
+                </Button>
+              </div>
             </div>
           </motion.div>
         )}
@@ -169,15 +176,18 @@ const Centers = () => {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.3 }}
+          className="border border-gray-200/50 rounded-lg overflow-hidden"
         >
-          <Card className="p-6">
-            <div className="mb-4">
-              <h2 className="text-xl font-semibold text-gray-900 mb-2">🗺️ Interactive Kenya Election Map</h2>
-              <p className="text-gray-600 text-sm">
+          <Card className="p-4 sm:p-6 border-0">
+            <div className="mb-3 sm:mb-4 border-b border-gray-200/50 pb-3 sm:pb-4">
+              <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-1 sm:mb-2">🗺️ Interactive Kenya Election Map</h2>
+              <p className="text-gray-600 text-xs sm:text-sm">
                 Click on counties, constituencies, wards, and polling stations to explore election data
               </p>
             </div>
-            <MapView centers={centers} maxMarkers={200} />
+            <div className="border border-gray-200 rounded-lg overflow-hidden">
+              <MapView centers={centers} maxMarkers={200} />
+            </div>
           </Card>
         </motion.div>
 
@@ -186,14 +196,21 @@ const Centers = () => {
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="mt-6 text-center"
+            className="mt-4 sm:mt-6 text-center p-4 border border-gray-200/50 rounded-lg bg-white/50"
           >
             <div className="inline-flex items-center space-x-2 text-gray-600">
               <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
-              <span>Loading centers...</span>
+              <span className="text-sm">Loading centers...</span>
             </div>
           </motion.div>
         )}
+
+        {/* Footer Border */}
+        <div className="mt-6 sm:mt-8 border-t border-gray-200/50 pt-4 sm:pt-6">
+          <p className="text-center text-xs sm:text-sm text-gray-500">
+            Kenya Voter Registration Centers • Updated regularly
+          </p>
+        </div>
       </div>
     </div>
   );

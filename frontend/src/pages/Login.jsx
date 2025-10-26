@@ -181,20 +181,20 @@ const Login = () => {
         <motion.div variants={itemVariants}>
           <Card className="overflow-hidden">
             {/* Header */}
-            <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-4 sm:p-6 text-center text-white">
+            <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-3 sm:p-4 lg:p-6 text-center text-white">
               <motion.div
                 initial={{ scale: 0.9, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 transition={{ duration: 0.5 }}
-                className="w-12 h-12 sm:w-16 sm:h-16 bg-white/20 rounded-xl sm:rounded-2xl flex items-center justify-center mx-auto mb-3 sm:mb-4"
+                className="w-10 h-10 sm:w-12 sm:h-12 lg:w-16 lg:h-16 bg-white/20 rounded-xl sm:rounded-2xl flex items-center justify-center mx-auto mb-3 sm:mb-4"
               >
-                <span className="text-2xl sm:text-3xl">🇰🇪</span>
+                <span className="text-xl sm:text-2xl lg:text-3xl">🇰🇪</span>
               </motion.div>
               <motion.h1 
                 initial={{ y: -10, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
                 transition={{ delay: 0.1, duration: 0.5 }}
-                className="text-2xl sm:text-3xl font-bold mb-1"
+                className="text-xl sm:text-2xl lg:text-3xl font-bold mb-1"
               >
                 Pamoja2Vote
               </motion.h1>
@@ -211,7 +211,7 @@ const Login = () => {
             </div>
 
             {/* Form Content */}
-            <div className="p-4 sm:p-6">
+            <div className="p-3 sm:p-4 lg:p-6">
               <AnimatePresence mode="wait">
                 {step === 'phone' ? (
                   <motion.div
@@ -222,7 +222,7 @@ const Login = () => {
                     variants={formVariants}
                     transition={{ duration: 0.3 }}
                   >
-                    <form onSubmit={handlePhoneSubmit} className="space-y-4 sm:space-y-6">
+                    <form onSubmit={handlePhoneSubmit} className="space-y-3 sm:space-y-4 lg:space-y-6">
                       <motion.div variants={itemVariants}>
                         <Input
                           id="phone"
@@ -240,7 +240,7 @@ const Login = () => {
                       <motion.div variants={itemVariants} className="pt-1 sm:pt-2">
                         <Button 
                           type="submit" 
-                          className="w-full text-sm sm:text-base py-3"
+                          className="w-full text-sm sm:text-base py-2 sm:py-3"
                           loading={loading}
                           disabled={!phoneNumber.trim()}
                         >
@@ -259,7 +259,7 @@ const Login = () => {
                     variants={formVariants}
                     transition={{ duration: 0.3 }}
                   >
-                    <form onSubmit={handleOTPSubmit} className="space-y-4 sm:space-y-6">
+                    <form onSubmit={handleOTPSubmit} className="space-y-3 sm:space-y-4 lg:space-y-6">
                       <motion.div variants={itemVariants} className="text-center">
                         <p className="text-xs sm:text-sm text-gray-600 mb-1">
                           We've sent a verification code to
@@ -305,7 +305,7 @@ const Login = () => {
                       <motion.div variants={itemVariants} className="space-y-2 sm:space-y-3 pt-2 sm:pt-4">
                         <Button 
                           type="submit" 
-                          className="w-full text-sm sm:text-base py-3"
+                          className="w-full text-sm sm:text-base py-2 sm:py-3"
                           loading={loading}
                           disabled={otp.length < 6}
                         >
@@ -351,7 +351,7 @@ const Login = () => {
           variants={itemVariants}
           className="mt-4 sm:mt-6"
         >
-          <Card className="p-4 sm:p-6 hover:shadow-lg transition-shadow cursor-pointer border-2 border-orange-200 hover:border-orange-300" onClick={handleFindCenters}>
+          <Card className="p-3 sm:p-4 lg:p-6 hover:shadow-lg transition-shadow cursor-pointer border-2 border-orange-200 hover:border-orange-300" onClick={handleFindCenters}>
             <div className="flex items-center">
               <div className="w-10 h-10 sm:w-12 sm:h-12 bg-orange-100 rounded-full flex items-center justify-center mr-3 sm:mr-4">
                 <MapPin className="w-5 h-5 sm:w-6 sm:h-6 text-orange-600" />

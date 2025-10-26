@@ -67,7 +67,7 @@ function App() {
                     path="/"
                     element={
                       <PrivateRoute>
-                        <div className="pb-16">
+                        <div className="pb-14 sm:pb-16">
                           <Navbar />
                           <Dashboard />
                         </div>
@@ -79,7 +79,7 @@ function App() {
                     path="/squad"
                     element={
                       <PrivateRoute>
-                        <div className="pb-16">
+                        <div className="pb-14 sm:pb-16">
                           <Navbar />
                           <Squad />
                         </div>
@@ -91,7 +91,7 @@ function App() {
                     path="/join-squad"
                     element={
                       <PrivateRoute>
-                        <div className="pb-16">
+                        <div className="pb-14 sm:pb-16">
                           <Navbar />
                           <JoinSquad />
                         </div>
@@ -103,7 +103,7 @@ function App() {
                     path="/squad/create"
                     element={
                       <PrivateRoute>
-                        <div className="pb-16">
+                        <div className="pb-14 sm:pb-16">
                           <Navbar />
                           <CreateSquad />
                         </div>
@@ -115,7 +115,7 @@ function App() {
                     path="/centers"
                     element={
                       <PrivateRoute>
-                        <div className="pb-16">
+                        <div className="pb-14 sm:pb-16">
                           <Navbar />
                           <Centers />
                         </div>
@@ -126,7 +126,7 @@ function App() {
                   <Route
                     path="/find-centers"
                     element={
-                      <div className="pb-16">
+                      <div className="pb-14 sm:pb-16">
                         <Navbar />
                         <FindCenters />
                       </div>
@@ -137,7 +137,7 @@ function App() {
                     path="/event/create"
                     element={
                       <PrivateRoute>
-                        <div className="pb-16">
+                        <div className="pb-14 sm:pb-16">
                           <Navbar />
                           <CreateEvent />
                         </div>
@@ -149,7 +149,7 @@ function App() {
                     path="/leaderboard"
                     element={
                       <PrivateRoute>
-                        <div className="pb-16">
+                        <div className="pb-14 sm:pb-16">
                           <Navbar />
                           <Leaderboard />
                         </div>
@@ -161,7 +161,7 @@ function App() {
                     path="/profile"
                     element={
                       <PrivateRoute>
-                        <div className="pb-16">
+                        <div className="pb-14 sm:pb-16">
                           <Navbar />
                           <Profile />
                         </div>

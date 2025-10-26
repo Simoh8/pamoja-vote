@@ -104,7 +104,7 @@ const OtpInput = ({
   };
 
   return (
-    <div className={`flex space-x-2 sm:space-x-3 ${className}`}>
+    <div className={`flex justify-center space-x-1 xs:space-x-2 sm:space-x-3 ${className}`}>
       {Array.from({ length }).map((_, index) => (
         <input
           key={index}
@@ -117,9 +117,18 @@ const OtpInput = ({
           onChange={(e) => handleChange(e, index)}
           onKeyDown={(e) => handleKeyDown(e, index)}
           onPaste={handlePaste}
-          className={`w-10 h-10 sm:w-12 sm:h-12 text-center text-lg sm:text-2xl font-semibold rounded-lg border-2 ${
-            otp[index] ? 'border-blue-500' : 'border-gray-300'
-          } focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white ${inputClassName}`}
+          className={`
+            w-8 h-8 xs:w-9 xs:h-9 sm:w-12 sm:h-12 
+            text-center 
+            text-base xs:text-lg sm:text-2xl 
+            font-semibold 
+            rounded-md xs:rounded-lg 
+            border-2 
+            ${otp[index] ? 'border-blue-500 bg-blue-50' : 'border-gray-300 bg-white'}
+            focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 
+            transition-all duration-200 
+            ${inputClassName}
+          `}
           autoComplete="one-time-code"
           aria-label={`Digit ${index + 1} of ${length}`}
           {...props}

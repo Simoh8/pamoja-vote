@@ -34,20 +34,20 @@ class ErrorBoundary extends React.Component {
   render() {
     if (this.state.hasError) {
       return (
-        <div className="min-h-screen bg-gradient-to-br from-red-50 via-orange-50 to-yellow-50 flex items-center justify-center px-4">
+        <div className="min-h-screen bg-gradient-to-br from-red-50 via-orange-50 to-yellow-50 flex items-center justify-center px-3 sm:px-4 border-x border-gray-200/50">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="text-center max-w-lg"
+            className="text-center max-w-md w-full"
           >
             {/* Error Icon */}
             <motion.div
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
               transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
-              className="w-32 h-32 bg-gradient-to-br from-red-400 to-red-600 rounded-3xl flex items-center justify-center mx-auto mb-8 shadow-2xl"
+              className="w-20 h-20 sm:w-24 sm:h-24 bg-gradient-to-br from-red-400 to-red-600 rounded-2xl sm:rounded-3xl flex items-center justify-center mx-auto mb-4 sm:mb-6 shadow-lg sm:shadow-xl"
             >
-              <AlertTriangle className="w-16 h-16 text-white" />
+              <AlertTriangle className="w-8 h-8 sm:w-10 sm:h-10 text-white" />
             </motion.div>
 
             {/* Error Message */}
@@ -55,7 +55,7 @@ class ErrorBoundary extends React.Component {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.3 }}
-              className="text-4xl font-bold text-gray-900 mb-4"
+              className="text-2xl sm:text-3xl font-bold text-gray-900 mb-3 sm:mb-4"
             >
               Something went wrong
             </motion.h1>
@@ -64,7 +64,7 @@ class ErrorBoundary extends React.Component {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.4 }}
-              className="text-gray-600 mb-8 leading-relaxed"
+              className="text-gray-600 text-sm sm:text-base mb-6 sm:mb-8 leading-relaxed"
             >
               We encountered an unexpected error. Don't worry, this happens sometimes.
               Let's get you back to the voter registration movement!
@@ -75,21 +75,21 @@ class ErrorBoundary extends React.Component {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.5 }}
-              className="space-y-4"
+              className="space-y-3 sm:space-y-4"
             >
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <div className="flex flex-col xs:flex-row gap-3 sm:gap-4 justify-center">
                 <Button
                   onClick={this.handleReset}
-                  className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold px-8 py-3 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300"
+                  className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold px-6 sm:px-8 py-2.5 sm:py-3 rounded-lg sm:rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 text-sm sm:text-base"
                 >
-                  <RefreshCw className="w-5 h-5 mr-2" />
+                  <RefreshCw className="w-4 h-4 sm:w-5 sm:h-5 mr-1 sm:mr-2" />
                   Try Again
                 </Button>
 
                 <Button
                   onClick={this.handleReload}
                   variant="outline"
-                  className="px-8 py-3 rounded-xl border-gray-300 text-gray-700 hover:bg-gray-50"
+                  className="px-6 sm:px-8 py-2.5 sm:py-3 rounded-lg sm:rounded-xl border-gray-300 text-gray-700 hover:bg-gray-50 text-sm sm:text-base"
                 >
                   Reload Page
                 </Button>
@@ -101,14 +101,14 @@ class ErrorBoundary extends React.Component {
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: 0.6 }}
-                  className="mt-8"
+                  className="mt-4 sm:mt-6"
                 >
-                  <Card className="p-4 bg-gray-100 border-gray-300">
+                  <Card className="p-3 sm:p-4 bg-gray-100 border-gray-300">
                     <details className="text-left">
-                      <summary className="cursor-pointer font-medium text-gray-700 mb-2">
+                      <summary className="cursor-pointer font-medium text-gray-700 text-xs sm:text-sm mb-1 sm:mb-2">
                         Error Details (Development)
                       </summary>
-                      <pre className="text-xs text-gray-600 overflow-auto max-h-32">
+                      <pre className="text-xs text-gray-600 overflow-auto max-h-24 sm:max-h-32">
                         {this.state.error.toString()}
                         {this.state.errorInfo.componentStack}
                       </pre>

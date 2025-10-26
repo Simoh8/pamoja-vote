@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 const Card = ({
   children,
   className = '',
-  padding = 'p-6',
+  padding = 'p-3 sm:p-4 lg:p-6',
   hoverable = false,
   onClick,
   ...props
