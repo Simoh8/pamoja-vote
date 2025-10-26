@@ -25,7 +25,7 @@ from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView, SpectacularRedocView
 
 # Import viewsets for API documentation
-from users.views import RegisterView, LoginView, VerifyOTPView, ProfileView, LogoutView
+from users.views import RegisterView, LoginView, VerifyOTPView, ProfileView, LogoutView, VerifyPasswordResetOTPView, PasswordResetView
 from squads.views import SquadViewSet, PublicSquadsView
 from centers.views import CenterViewSet
 from events.views import EventViewSet, UpcomingEventsView
@@ -45,6 +45,8 @@ urlpatterns = [
     path('api/auth/register/', RegisterView.as_view(), name='register'),
     path('api/auth/login/', LoginView.as_view(), name='login'),
     path('api/auth/verify-otp/', VerifyOTPView.as_view(), name='verify_otp'),
+    path('api/auth/password-reset/', PasswordResetView.as_view(), name='password_reset'),
+    path('api/auth/verify-password-reset/', VerifyPasswordResetOTPView.as_view(), name='verify_password_reset'),
     path('api/auth/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('api/auth/profile/', ProfileView.as_view(), name='profile'),
     path('api/auth/logout/', LogoutView.as_view(), name='logout'),

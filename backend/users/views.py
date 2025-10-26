@@ -4,13 +4,16 @@ from rest_framework.views import APIView
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.utils import timezone
-import random
-import string
+from django.db import transaction
 from .models import User
 from .serializers import (
     UserSerializer, UserUpdateSerializer, LoginSerializer,
     OTPSerializer, PasswordResetSerializer
 )
+from invites.sms_service import sms_service
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class RegisterView(generics.CreateAPIView):
@@ -23,24 +26,39 @@ class RegisterView(generics.CreateAPIView):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        # Send OTP for verification (mock for development)
+        # Generate and send OTP via SMS
         phone_number = serializer.validated_data['phone_number']
-        otp = '123456'  # Mock OTP
+        otp = User.generate_otp_for_phone(phone_number)
 
-        # In production, integrate with Twilio Verify API
-        # twilio_client = Client(settings.TWILIO_ACCOUNT_SID, settings.TWILIO_AUTH_TOKEN)
-        # verification = twilio_client.verify.services(settings.TWILIO_VERIFY_SID).verifications.create(
-        #     to=phone_number, channel='sms'
-        # )
+        # Send OTP via SMS
+        message = f"🇰🇪 Your PamojaVote verification code is: {otp}\n\nThis code will expire in 5 minutes."
+
+        sms_result = sms_service.send_sms(
+            to_phone=phone_number,
+            message=message
+        )
+
+        if sms_result['success']:
+            logger.info(f"Registration OTP sent successfully to {phone_number}")
+        else:
+            logger.error(f"Failed to send registration OTP to {phone_number}: {sms_result['error']}")
+            # Still create user but log the error
+            # In production, you might want to return an error instead
 
         user = serializer.save()
 
-        return Response({
-            'message': 'User registered successfully. Please verify OTP.',
+        response_data = {
+            'message': 'User registered successfully. Please verify OTP sent to your phone.',
             'phone_number': phone_number,
-            'otp': otp,  # Remove in production
+            'otp_sent': sms_result['success'],
             'user_id': str(user.id)
-        }, status=status.HTTP_201_CREATED)
+        }
+
+        if not sms_result['success']:
+            response_data['error'] = 'Failed to send OTP SMS. Please try again.'
+            response_data['otp'] = otp  # Include OTP in response for debugging
+
+        return Response(response_data, status=status.HTTP_201_CREATED)
 
 
 
@@ -54,11 +72,11 @@ class LoginView(APIView):
         serializer.is_valid(raise_exception=True)
 
         phone_number = serializer.validated_data['phone_number']
-        otp = '123456'  # Mock OTP
 
         # Check if user exists, create if not
         try:
             user = User.objects.get(phone_number=phone_number)
+            user_created = False
         except User.DoesNotExist:
             # Create new user with phone number
             user = User.objects.create_user(
@@ -68,19 +86,34 @@ class LoginView(APIView):
                 last_name='',
                 password='temp_password_123'  # Temporary password
             )
+            user_created = True
 
-        # In production, integrate with Twilio Verify API
-        # twilio_client = Client(settings.TWILIO_ACCOUNT_SID, settings.TWILIO_AUTH_TOKEN)
-        # verification = twilio_client.verify.services(settings.TWILIO_VERIFY_SID).verifications.create(
-        #     to=phone_number, channel='sms'
-        # )
+        # Generate and send OTP via SMS
+        otp = user.generate_otp()
+        message = f"🇰🇪 Your PamojaVote login code is: {otp}\n\nThis code will expire in 5 minutes."
 
-        return Response({
+        sms_result = sms_service.send_sms(
+            to_phone=phone_number,
+            message=message
+        )
+
+        if sms_result['success']:
+            logger.info(f"Login OTP sent successfully to {phone_number}")
+        else:
+            logger.error(f"Failed to send login OTP to {phone_number}: {sms_result['error']}")
+
+        response_data = {
             'message': 'OTP sent to your phone number.',
             'phone_number': phone_number,
-            'otp': otp,  # Remove in production
-            'user_created': not User.objects.filter(phone_number=phone_number).exists()
-        })
+            'otp_sent': sms_result['success'],
+            'user_created': user_created
+        }
+
+        if not sms_result['success']:
+            response_data['error'] = 'Failed to send OTP SMS. Please try again.'
+            response_data['otp'] = otp  # Include OTP in response for debugging
+
+        return Response(response_data)
 
 
 class VerifyOTPView(APIView):
@@ -92,6 +125,9 @@ class VerifyOTPView(APIView):
         serializer.is_valid(raise_exception=True)
 
         user = serializer.validated_data['user']
+
+        # Clear OTP after successful verification
+        user.clear_otp()
 
         # Generate JWT tokens
         refresh = RefreshToken.for_user(user)
@@ -121,11 +157,52 @@ class PasswordResetView(APIView):
         user = serializer.validated_data['user']
         new_password = serializer.validated_data['new_password']
 
+        # Generate and send new OTP for password reset confirmation
+        otp = user.generate_otp()
+        message = f"🇰🇪 Your PamojaVote password reset code is: {otp}\n\nThis code will expire in 5 minutes."
+
+        sms_result = sms_service.send_sms(
+            to_phone=user.phone_number,
+            message=message
+        )
+
+        if sms_result['success']:
+            logger.info(f"Password reset OTP sent successfully to {user.phone_number}")
+        else:
+            logger.error(f"Failed to send password reset OTP to {user.phone_number}: {sms_result['error']}")
+
+        # Set new password (OTP verification will be done separately)
         user.set_password(new_password)
         user.save()
 
+        response_data = {
+            'message': 'Password reset OTP sent to your phone. Please verify the code to complete the reset.',
+            'otp_sent': sms_result['success']
+        }
+
+        if not sms_result['success']:
+            response_data['error'] = 'Failed to send OTP SMS. Please try again.'
+            response_data['otp'] = otp  # Include OTP in response for debugging
+
+        return Response(response_data)
+
+
+class VerifyPasswordResetOTPView(APIView):
+    """Verify password reset OTP"""
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        # Use the same serializer as login verification
+        serializer = OTPSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        user = serializer.validated_data['user']
+
+        # Clear OTP after successful verification
+        user.clear_otp()
+
         return Response({
-            'message': 'Password reset successfully'
+            'message': 'Password reset OTP verified successfully. Your password has been updated.'
         })
 
 

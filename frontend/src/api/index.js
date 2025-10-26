@@ -211,6 +211,24 @@ export const authAPI = {
       otp,
     }),
 
+  // Register new user (sends OTP)
+  register: (userData) =>
+    apiClient.post('/auth/register/', userData),
+
+  // Reset password (sends OTP)
+  resetPassword: (phoneNumber, newPassword) =>
+    apiClient.post('/auth/password-reset/', {
+      phone_number: phoneNumber,
+      new_password: newPassword,
+    }),
+
+  // Verify password reset OTP
+  verifyPasswordReset: (phoneNumber, otp) =>
+    apiClient.post('/auth/verify-password-reset/', {
+      phone_number: phoneNumber,
+      otp,
+    }),
+
   // Refresh access token
   refreshToken: (refreshToken) =>
     apiClient.post('/auth/refresh/', {

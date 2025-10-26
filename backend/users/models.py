@@ -1,7 +1,8 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser, BaseUserManager
+from django.utils import timezone
 import uuid
-
+from datetime import timedelta
 
 class UserManager(BaseUserManager):
     def create_user(self, phone_number, email, password=None, **extra_fields):
@@ -39,6 +40,10 @@ class User(AbstractUser):
     profile_pic = models.CharField(max_length=255, blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
+    # OTP fields for SMS verification
+    otp_code = models.CharField(max_length=6, blank=True, null=True)
+    otp_created_at = models.DateTimeField(blank=True, null=True)
+
     # Remove username field since we're using phone_number as the unique identifier
     username = None
 
@@ -50,5 +55,48 @@ class User(AbstractUser):
     def __str__(self):
         return f"{self.phone_number} - {self.get_full_name()}"
 
-    class Meta:
-        ordering = ['-created_at']
+    def generate_otp(self):
+        """Generate a 6-digit OTP code"""
+        import random
+        import string
+
+        # Generate random 6-digit OTP
+        otp = ''.join(random.choices(string.digits, k=6))
+        self.otp_code = otp
+        self.otp_created_at = timezone.now()
+        self.save(update_fields=['otp_code', 'otp_created_at'])
+
+        return otp
+
+    def verify_otp(self, otp_code):
+        """Verify if the provided OTP code is valid"""
+        if not self.otp_code or not self.otp_created_at:
+            return False
+
+        # Check if OTP has expired (5 minutes expiry)
+        expiry_time = self.otp_created_at + timedelta(minutes=5)
+        if timezone.now() > expiry_time:
+            return False
+
+        return self.otp_code == otp_code
+
+    def clear_otp(self):
+        """Clear the OTP code"""
+        self.otp_code = None
+        self.otp_created_at = None
+        self.save(update_fields=['otp_code', 'otp_created_at'])
+
+    @staticmethod
+    def generate_otp_for_phone(phone_number):
+        """Generate OTP for a phone number (creates user if doesn't exist)"""
+        try:
+            user = User.objects.get(phone_number=phone_number)
+        except User.DoesNotExist:
+            # Create user with temporary email if doesn't exist
+            user = User.objects.create_user(
+                phone_number=phone_number,
+                email=f'{phone_number}@temp.local',
+                password='temp_password_123'
+            )
+
+        return user.generate_otp()
