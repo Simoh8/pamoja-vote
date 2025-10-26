@@ -7,6 +7,10 @@ from .models import Invite
 from .serializers import InviteSerializer, InviteCreateSerializer, WhatsAppInviteSerializer
 from squads.models import Squad
 from events.models import Event
+from .sms_service import sms_service
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class InviteViewSet(viewsets.ModelViewSet):
@@ -35,10 +39,47 @@ class WhatsAppInviteView(generics.CreateAPIView):
 
         invites = serializer.create_invites()
 
-        return Response({
-            'message': f'Successfully created {len(invites)} invites',
-            'invites': InviteSerializer(invites, many=True).data
-        }, status=status.HTTP_201_CREATED)
+        # Send SMS messages if channel is SMS
+        failed_sends = []
+        success_count = 0
+
+        for invite in invites:
+            if invite.channel == 'sms' and sms_service.is_configured():
+                sms_result = sms_service.send_sms(
+                    to_phone=invite.invitee_contact,
+                    message=invite.message
+                )
+
+                if sms_result['success']:
+                    invite.status = 'sent'
+                    success_count += 1
+                    logger.info(f"SMS sent successfully for invite to {invite.invitee_contact}")
+                else:
+                    invite.status = 'failed'
+                    failed_sends.append({
+                        'phone': invite.invitee_contact,
+                        'error': sms_result['error']
+                    })
+                    logger.error(f"Failed to send SMS for invite to {invite.invitee_contact}: {sms_result['error']}")
+            else:
+                invite.status = 'sent'  # For WhatsApp or when SMS not configured
+                success_count += 1
+
+            invite.save()
+
+        # Prepare response
+        response_data = {
+            'message': f'Successfully created and sent {success_count} invites',
+            'invites': InviteSerializer(invites, many=True).data,
+            'total_sent': success_count,
+            'total_failed': len(failed_sends),
+        }
+
+        if failed_sends:
+            response_data['failed_sends'] = failed_sends
+            logger.warning(f"WhatsApp invite creation completed with {len(failed_sends)} SMS failures")
+
+        return Response(response_data, status=status.HTTP_201_CREATED)
 
 
 class BulkInviteView(generics.CreateAPIView):
@@ -64,13 +105,21 @@ class BulkInviteView(generics.CreateAPIView):
             )
 
         invites = []
-        base_url = "https://pamoja.vote"
+        failed_sends = []
+        base_url = "https://pamoja-vote.vercel.app"
 
         for phone_number in phone_numbers:
             if squad_id:
                 try:
                     squad = Squad.objects.get(id=squad_id, owner=request.user)
-                    message = f"Hey! 🇰🇪 Join our squad '{squad.name}' on PamojaVote - we're working together to register as voters. Tap here to join 👉 {base_url}/join/{squad_id}"
+
+                    # Different message format based on channel
+                    if channel == 'sms':
+                        message = f"🇰🇪 Join squad '{squad.name}' on PamojaVote - register to vote together! {base_url}/join/{squad_id}"
+                    else:  # WhatsApp
+                        message = f"Hey! 🇰🇪 Join our squad '{squad.name}' on PamojaVote - we're working together to register as voters. Tap here to join 👉 {base_url}/join/{squad_id}"
+
+                    # Create invite first
                     invite = Invite.objects.create(
                         squad=squad,
                         inviter=request.user,
@@ -78,12 +127,44 @@ class BulkInviteView(generics.CreateAPIView):
                         channel=channel,
                         message=message
                     )
+
+                    # Send SMS if channel is SMS and service is configured
+                    if channel == 'sms' and sms_service.is_configured():
+                        sms_result = sms_service.send_sms(
+                            to_phone=phone_number,
+                            message=message
+                        )
+
+                        if sms_result['success']:
+                            invite.status = 'sent'
+                            logger.info(f"SMS sent successfully for squad invite to {phone_number}")
+                        else:
+                            invite.status = 'failed'
+                            failed_sends.append({
+                                'phone': phone_number,
+                                'error': sms_result['error']
+                            })
+                            logger.error(f"Failed to send SMS for squad invite to {phone_number}: {sms_result['error']}")
+                    else:
+                        invite.status = 'sent'  # For WhatsApp or when SMS not configured
+
+                    invite.save()
+                    invites.append(invite)
+
                 except Squad.DoesNotExist:
+                    logger.warning(f"Squad {squad_id} not found or user not owner")
                     continue
             else:
                 try:
                     event = Event.objects.get(id=event_id)
-                    message = f"Hey! 🇰🇪 Join us for a voter registration event at {event.center.name} on {event.datetime.strftime('%Y-%m-%d %H:%M')}. Tap here 👉 {base_url}/event/{event_id}"
+
+                    # Different message format based on channel
+                    if channel == 'sms':
+                        message = f"🇰🇪 Voter registration event at {event.center.name} on {event.datetime.strftime('%Y-%m-%d %H:%M')}. {base_url}/event/{event_id}"
+                    else:  # WhatsApp
+                        message = f"Hey! 🇰🇪 Join us for a voter registration event at {event.center.name} on {event.datetime.strftime('%Y-%m-%d %H:%M')}. Tap here 👉 {base_url}/event/{event_id}"
+
+                    # Create invite first
                     invite = Invite.objects.create(
                         event=event,
                         inviter=request.user,
@@ -91,12 +172,44 @@ class BulkInviteView(generics.CreateAPIView):
                         channel=channel,
                         message=message
                     )
+
+                    # Send SMS if channel is SMS and service is configured
+                    if channel == 'sms' and sms_service.is_configured():
+                        sms_result = sms_service.send_sms(
+                            to_phone=phone_number,
+                            message=message
+                        )
+
+                        if sms_result['success']:
+                            invite.status = 'sent'
+                            logger.info(f"SMS sent successfully for event invite to {phone_number}")
+                        else:
+                            invite.status = 'failed'
+                            failed_sends.append({
+                                'phone': phone_number,
+                                'error': sms_result['error']
+                            })
+                            logger.error(f"Failed to send SMS for event invite to {phone_number}: {sms_result['error']}")
+                    else:
+                        invite.status = 'sent'  # For WhatsApp or when SMS not configured
+
+                    invite.save()
+                    invites.append(invite)
+
                 except Event.DoesNotExist:
+                    logger.warning(f"Event {event_id} not found")
                     continue
 
-            invites.append(invite)
-
-        return Response({
+        # Prepare response
+        response_data = {
             'message': f'Successfully created {len(invites)} invites',
-            'invites': InviteSerializer(invites, many=True).data
-        }, status=status.HTTP_201_CREATED)
+            'invites': InviteSerializer(invites, many=True).data,
+            'total_sent': len(invites),
+            'total_failed': len(failed_sends),
+        }
+
+        if failed_sends:
+            response_data['failed_sends'] = failed_sends
+            logger.warning(f"Bulk invite completed with {len(failed_sends)} failures")
+
+        return Response(response_data, status=status.HTTP_201_CREATED)

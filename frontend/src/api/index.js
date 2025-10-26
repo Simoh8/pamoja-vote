@@ -327,9 +327,13 @@ export const inviteAPI = {
   sendWhatsAppInvite: (data) =>
     apiClient.post('/invites/whatsapp/', data),
 
-  // Send bulk invites
+  // Send bulk invites (SMS or WhatsApp)
   sendBulkInvite: (data) =>
     apiClient.post('/invites/bulk/', data),
+
+  // Get invites (for tracking)
+  getInvites: () =>
+    apiClient.get('/invites/'),
 };
 
 // Export the configured client for direct use if needed

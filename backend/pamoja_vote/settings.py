@@ -192,11 +192,16 @@ if not DEBUG:
 # ----------------------------------------------------------------------
 # THIRD-PARTY SERVICE KEYS
 # ----------------------------------------------------------------------
+# Twilio (legacy - keeping for backward compatibility)
 TWILIO_ACCOUNT_SID = os.getenv('TWILIO_ACCOUNT_SID')
 TWILIO_AUTH_TOKEN = os.getenv('TWILIO_AUTH_TOKEN')
 TWILIO_VERIFY_SID = os.getenv('TWILIO_VERIFY_SID')
+TWILIO_PHONE_NUMBER = os.getenv('TWILIO_PHONE_NUMBER', '+1234567890')  # Default for dev/testing
 
-GOOGLE_MAPS_API_KEY = os.getenv('GOOGLE_MAPS_API_KEY')
+# Infobip SMS Service (preferred)
+INFOBIP_API_KEY = os.getenv('INFOBIP_API_KEY')
+INFOBIP_BASE_URL = os.getenv('INFOBIP_BASE_URL', 'https://api.infobip.com')
+INFOBIP_SENDER = os.getenv('INFOBIP_SENDER', 'PamojaVote')
 
 # ----------------------------------------------------------------------
 # DEFAULT PRIMARY KEY FIELD TYPE

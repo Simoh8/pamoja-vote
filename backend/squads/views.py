@@ -11,6 +11,10 @@ from .serializers import (
 )
 from invites.models import Invite
 from invites.serializers import InviteSerializer
+from invites.sms_service import sms_service
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class SquadViewSet(viewsets.ModelViewSet):
@@ -157,11 +161,14 @@ class SquadViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_200_OK
             )
 
-        invites = []
-        base_url = "https://pamoja.vote"
+        # Send announcements via SMS
+        failed_sends = []
+        success_count = 0
 
         for member in members:
-            invite_message = f"📢 SQUAD ANNOUNCEMENT from '{squad.name}':\n\n{message}\n\n🏛️ Stay registered to vote! {base_url}"
+            invite_message = f"📢 SQUAD ANNOUNCEMENT from '{squad.name}':\n\n{message}\n\n🏛️ Stay registered to vote! https://pamoja-vote.vercel.app"
+
+            # Create invite record first
             invite = Invite.objects.create(
                 squad=squad,
                 inviter=request.user,
@@ -169,12 +176,45 @@ class SquadViewSet(viewsets.ModelViewSet):
                 channel='sms',
                 message=invite_message
             )
-            invites.append(invite)
 
-        return Response({
-            'message': f'Announcement sent to {len(invites)} squad members',
-            'recipients_count': len(invites)
-        }, status=status.HTTP_200_OK)
+            # Send SMS if service is configured
+            if sms_service.is_configured():
+                sms_result = sms_service.send_sms(
+                    to_phone=member.user.phone_number,
+                    message=invite_message
+                )
+
+                if sms_result['success']:
+                    invite.status = 'sent'
+                    success_count += 1
+                    logger.info(f"Announcement SMS sent successfully to {member.user.phone_number}")
+                else:
+                    invite.status = 'failed'
+                    failed_sends.append({
+                        'member': str(member.user),
+                        'phone': member.user.phone_number,
+                        'error': sms_result['error']
+                    })
+                    logger.error(f"Failed to send announcement SMS to {member.user.phone_number}: {sms_result['error']}")
+            else:
+                invite.status = 'sent'  # Mark as sent when SMS not configured
+                success_count += 1
+                logger.warning("SMS service not configured, announcement marked as sent without delivery")
+
+            invite.save()
+
+        # Prepare response
+        response_data = {
+            'message': f'Announcement sent to {success_count} squad members',
+            'recipients_count': success_count,
+            'total_failed': len(failed_sends),
+        }
+
+        if failed_sends:
+            response_data['failed_sends'] = failed_sends
+            logger.warning(f"Announcement completed with {len(failed_sends)} SMS failures")
+
+        return Response(response_data, status=status.HTTP_200_OK)
 
     @action(detail=False, methods=['get'])
     def my_squads(self, request):

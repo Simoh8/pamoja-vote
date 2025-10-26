@@ -29,7 +29,7 @@ from users.views import RegisterView, LoginView, VerifyOTPView, ProfileView, Log
 from squads.views import SquadViewSet, PublicSquadsView
 from centers.views import CenterViewSet
 from events.views import EventViewSet, UpcomingEventsView
-from invites.views import InviteViewSet
+from invites.views import InviteViewSet, WhatsAppInviteView, BulkInviteView
 
 # API Router
 router = DefaultRouter()
@@ -53,6 +53,10 @@ urlpatterns = [
     path('api/', include(router.urls)),
     path('api/public/squads/', PublicSquadsView.as_view(), name='public_squads'),
     path('api/events/upcoming/', UpcomingEventsView.as_view(), name='upcoming_events'),
+
+    # Invite endpoints (not in router for special handling)
+    path('api/invites/whatsapp/', WhatsAppInviteView.as_view(), name='whatsapp_invite'),
+    path('api/invites/bulk/', BulkInviteView.as_view(), name='bulk_invite'),
 
     # API Documentation
     path('api/docs/', SpectacularAPIView.as_view(), name='schema'),
