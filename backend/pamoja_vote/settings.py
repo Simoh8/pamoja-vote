@@ -201,7 +201,7 @@ TWILIO_PHONE_NUMBER = os.getenv('TWILIO_PHONE_NUMBER', '+1234567890')  # Default
 # Infobip SMS Service (preferred)
 INFOBIP_API_KEY = os.getenv('INFOBIP_API_KEY')
 INFOBIP_BASE_URL = os.getenv('INFOBIP_BASE_URL', 'https://api.infobip.com')
-INFOBIP_SENDER = os.getenv('INFOBIP_SENDER', 'PamojaVote')
+INFOBIP_SENDER = os.getenv('INFOBIP_SENDER', 'Pamoja2Vote')
 
 # ----------------------------------------------------------------------
 # DEFAULT PRIMARY KEY FIELD TYPE

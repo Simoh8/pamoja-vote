@@ -1,5 +1,5 @@
 /**
- * Centralized API Layer for PamojaVote
+ * Centralized API Layer for Pamoja2Vote
  * Provides consistent error handling, request/response interceptors, and typed API responses
  */
 

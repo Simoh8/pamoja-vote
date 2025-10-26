@@ -49,7 +49,7 @@ export const handleApiError = (error, options = {}) => {
 
   if (shouldRedirect && typeof window !== 'undefined') {
     // Could redirect to 404 page or handle appropriately
-    console.log('404 error detected, consider redirecting to 404 page');
+    return;
   }
 
   return message;

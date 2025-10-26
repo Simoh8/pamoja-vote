@@ -17,13 +17,13 @@ class Command(BaseCommand):
         parser.add_argument(
             '--sender',
             type=str,
-            default='PamojaVote',
-            help='Sender name (default: PamojaVote)'
+            default='Pamoja2Vote',
+            help='Sender name (default: Pamoja2Vote)'
         )
 
     def handle(self, *args, **options):
         self.stdout.write(
-            self.style.WARNING('🚀 Infobip SMS Setup for PamojaVote')
+            self.style.WARNING('🚀 Infobip SMS Setup for Pamoja2Vote')
         )
         self.stdout.write('=' * 50)
 
@@ -43,7 +43,7 @@ class Command(BaseCommand):
             self.stdout.write('4. Generate a new API key with SMS permissions')
             self.stdout.write('5. Add to your .env file:')
             self.stdout.write('   INFOBIP_API_KEY=your-api-key-here')
-            self.stdout.write('   INFOBIP_SENDER=PamojaVote')
+            self.stdout.write('   INFOBIP_SENDER=Pamoja2Vote')
             return
 
         self.stdout.write(

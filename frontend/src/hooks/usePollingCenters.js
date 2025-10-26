@@ -84,12 +84,10 @@ export const usePollingCenters = (options = {}) => {
     let chunkFeatures;
     if (!enablePagination) {
       chunkFeatures = filteredFeatures; // Return all filtered features
-      console.log(`Returning ${chunkFeatures.length} centers (no pagination)`);
     } else {
       const start = startIndex * chunkSize;
       const end = Math.min(start + chunkSize, filteredFeatures.length);
       chunkFeatures = filteredFeatures.slice(start, end);
-      console.log(`Returning ${chunkFeatures.length} centers (pagination: ${start}-${end})`);
     }
 
     const centers = chunkFeatures.map((feature, index) => {

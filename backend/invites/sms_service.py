@@ -16,7 +16,7 @@ class SMSService:
         """Initialize Infobip API configuration"""
         self.api_key = settings.INFOBIP_API_KEY
         self.base_url = settings.INFOBIP_BASE_URL or 'https://api.infobip.com'
-        self.sender = settings.INFOBIP_SENDER or 'PamojaVote'
+        self.sender = settings.INFOBIP_SENDER or 'Pamoja2Vote'
 
         if self.api_key:
             self.headers = {

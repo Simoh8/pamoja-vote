@@ -142,7 +142,6 @@ const FindCenters = () => {
 
       // Debug logging for troubleshooting
       if (result && trimmedSearch.length >= 3) {
-        console.log(`Found center: ${center.name} (${center.location}, ${center.county}) for search: "${trimmedSearch}"`);
       }
 
       // County filter (separate from search)

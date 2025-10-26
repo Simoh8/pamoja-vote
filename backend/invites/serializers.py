@@ -99,9 +99,9 @@ class WhatsAppInviteSerializer(serializers.Serializer):
 
                 # Different message format based on channel
                 if data.get('channel') == 'sms':
-                    message = f"🇰🇪 Join squad '{squad.name}' on PamojaVote - register to vote together! {base_url}/join/{squad_id}"
+                    message = f"🇰🇪 Join squad '{squad.name}' on Pamoja2Vote - register to vote together! {base_url}/join/{squad_id}"
                 else:  # WhatsApp
-                    message = f"Hey! 🇰🇪 Join our squad '{squad.name}' on PamojaVote - we're working together to register as voters. Tap here to join 👉 {base_url}/join/{squad_id}"
+                    message = f"Hey! 🇰🇪 Join our squad '{squad.name}' on Pamoja2Vote - we're working together to register as voters. Tap here to join 👉 {base_url}/join/{squad_id}"
 
                 invite = Invite.objects.create(
                     squad=squad,

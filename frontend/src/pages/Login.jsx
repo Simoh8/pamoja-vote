@@ -196,7 +196,7 @@ const Login = () => {
                 transition={{ delay: 0.1, duration: 0.5 }}
                 className="text-3xl font-bold mb-1"
               >
-                PamojaVote
+                Pamoja2Vote
               </motion.h1>
               <motion.p 
                 initial={{ y: -5, opacity: 0 }}
@@ -374,7 +374,7 @@ const Login = () => {
           className="mt-6 text-center text-xs text-gray-500"
         >
           <p>By continuing, you agree to our Terms of Service and Privacy Policy</p>
-          <p className="mt-1">© {new Date().getFullYear()} PamojaVote. All rights reserved.</p>
+          <p className="mt-1">© {new Date().getFullYear()} Pamoja2Vote. All rights reserved.</p>
         </motion.div>
       </motion.div>
     </div>

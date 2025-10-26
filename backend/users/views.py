@@ -31,7 +31,7 @@ class RegisterView(generics.CreateAPIView):
         otp = User.generate_otp_for_phone(phone_number)
 
         # Send OTP via SMS
-        message = f"🇰🇪 Your PamojaVote verification code is: {otp}\n\nThis code will expire in 5 minutes."
+        message = f"🇰🇪 Your Pamoja2Vote verification code is: {otp}\n\nThis code will expire in 5 minutes."
 
         sms_result = sms_service.send_sms(
             to_phone=phone_number,
@@ -90,7 +90,7 @@ class LoginView(APIView):
 
         # Generate and send OTP via SMS
         otp = user.generate_otp()
-        message = f"🇰🇪 Your PamojaVote login code is: {otp}\n\nThis code will expire in 5 minutes."
+        message = f"🇰🇪 Your Pamoja2Vote login code is: {otp}\n\nThis code will expire in 5 minutes."
 
         sms_result = sms_service.send_sms(
             to_phone=phone_number,
@@ -159,7 +159,7 @@ class PasswordResetView(APIView):
 
         # Generate and send new OTP for password reset confirmation
         otp = user.generate_otp()
-        message = f"🇰🇪 Your PamojaVote password reset code is: {otp}\n\nThis code will expire in 5 minutes."
+        message = f"🇰🇪 Your Pamoja2Vote password reset code is: {otp}\n\nThis code will expire in 5 minutes."
 
         sms_result = sms_service.send_sms(
             to_phone=user.phone_number,

@@ -32,7 +32,7 @@ class UserManager(BaseUserManager):
 
 class User(AbstractUser):
     """
-    Custom user model for PamojaVote
+    Custom user model for Pamoja2Vote
     """
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     phone_number = models.CharField(max_length=15, unique=True)
