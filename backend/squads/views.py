@@ -86,6 +86,52 @@ class SquadViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
+        # Check if squad is at maximum capacity
+        if squad.max_members is not None and squad.member_count >= squad.max_members:
+            # Get other squads at the same registration center that aren't full
+            available_squads = []
+            if squad.registration_center:
+                for other_squad in Squad.objects.filter(
+                    registration_center=squad.registration_center,
+                    is_public=True
+                ).exclude(id=squad.id):
+                    if other_squad.max_members is None or other_squad.member_count < other_squad.max_members:
+                        available_squads.append(other_squad)
+
+            suggestion_message = f'Squad "{squad.name}" is at maximum capacity ({squad.max_members} members). '
+
+            if available_squads:
+                available_count = len(available_squads)
+                center_name = squad.registration_center.name if squad.registration_center else "this center"
+                suggestion_message += f'There are {available_count} other squad(s) available at {center_name}. '
+
+            suggestion_message += 'Please create a new squad or join another available squad.'
+
+            return Response(
+                {
+                    'error': 'Squad is full',
+                    'message': suggestion_message,
+                    'squad_info': {
+                        'id': str(squad.id),
+                        'name': squad.name,
+                        'current_members': squad.member_count,
+                        'max_members': squad.max_members,
+                        'registration_center': squad.registration_center.name if squad.registration_center else None,
+                        'is_full': True
+                    },
+                    'available_squads': [
+                        {
+                            'id': str(s.id),
+                            'name': s.name,
+                            'current_members': s.member_count,
+                            'max_members': s.max_members,
+                            'remaining_slots': s.remaining_slots
+                        } for s in available_squads[:3]  # Show up to 3 alternatives
+                    ]
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
         serializer = SquadJoinSerializer(data={'squad_id': pk}, context={'request': request})
         serializer.is_valid(raise_exception=True)
 
@@ -303,9 +349,26 @@ class SquadViewSet(viewsets.ModelViewSet):
                     status=status.HTTP_403_FORBIDDEN
                 )
 
-        members = squad.members.all()
-        serializer = SquadMemberSerializer(members, many=True, context={'request': request})
-        return Response(serializer.data)
+    @action(detail=True, methods=['get'])
+    def available_at_center(self, request, pk=None):
+        """Get available squads at the same registration center"""
+        squad = self.get_object()
+
+        if not squad.registration_center:
+            return Response(
+                {'message': 'This squad is not associated with a registration center'},
+                status=status.HTTP_200_OK
+            )
+
+        # Get available squads at the same center
+        available_squads = squad.get_available_squads_at_center(exclude_self=True)
+
+        serializer = SquadSerializer(available_squads[:5], many=True)  # Limit to 5 suggestions
+        return Response({
+            'available_squads': serializer.data,
+            'center_name': squad.registration_center.name,
+            'total_available': len(available_squads)
+        })
 
 
 class SquadMemberViewSet(viewsets.ModelViewSet):

@@ -70,6 +70,7 @@ class SquadSerializer(serializers.ModelSerializer):
     registration_progress = serializers.ReadOnlyField()
     registration_center = CenterSerializer(read_only=True)
     remaining_slots = serializers.ReadOnlyField()
+    is_full = serializers.ReadOnlyField()
 
     class Meta:
         model = Squad
@@ -77,11 +78,11 @@ class SquadSerializer(serializers.ModelSerializer):
             'id', 'name', 'description', 'max_members', 'county',
             'is_public', 'voter_registration_date', 'owner', 'owner_id', 
             'members', 'member_count', 'registration_progress', 
-            'registration_center', 'remaining_slots', 'created_at'
+            'registration_center', 'remaining_slots', 'is_full', 'created_at'
         )
         read_only_fields = (
             'id', 'owner', 'owner_id', 'created_at', 'member_count', 
-            'registration_progress', 'remaining_slots'
+            'registration_progress', 'remaining_slots', 'is_full'
         )
 
     def get_owner(self, obj):
@@ -223,6 +224,13 @@ class SquadJoinSerializer(serializers.Serializer):
         if squad.members.filter(user=user).exists():
             raise serializers.ValidationError("You are already a member of this squad.")
 
+        # Check if squad is full
+        if squad.is_full:
+            raise serializers.ValidationError(
+                f'Squad "{squad.name}" is at maximum capacity ({squad.max_members} members). '
+                'Please create a new squad or join another available squad.'
+            )
+
         return value
 
     def save(self):
@@ -247,7 +255,9 @@ class SquadAnnouncementSerializer(serializers.Serializer):
 class SquadLeaderboardSerializer(serializers.ModelSerializer):
     """Serializer for squad leaderboard"""
     member_count = serializers.IntegerField()
+    remaining_slots = serializers.ReadOnlyField()
+    is_full = serializers.ReadOnlyField()
 
     class Meta:
         model = Squad
-        fields = ('id', 'name', 'county', 'member_count', 'registration_progress', 'created_at')
+        fields = ('id', 'name', 'county', 'member_count', 'remaining_slots', 'is_full', 'registration_progress', 'created_at')

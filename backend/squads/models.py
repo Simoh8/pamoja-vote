@@ -1,4 +1,5 @@
 from django.db import models
+from django.db.models import Count, Q
 import uuid
 from django.conf import settings
 
@@ -40,6 +41,34 @@ class Squad(models.Model):
     @property
     def member_count(self):
         return self.members.count()
+
+    @property
+    def is_full(self):
+        """Check if squad is at maximum capacity"""
+        if self.max_members is None:
+            return False
+        return self.member_count >= self.max_members
+
+    def get_available_squads_at_center(self, exclude_self=True):
+        """Get available squads at the same registration center"""
+        if not self.registration_center:
+            return Squad.objects.none()
+
+        queryset = Squad.objects.filter(
+            registration_center=self.registration_center,
+            is_public=True
+        )
+
+        if exclude_self:
+            queryset = queryset.exclude(id=self.id)
+
+        # Filter for squads that aren't full (either no max_members or current < max)
+        available_squads = []
+        for squad in queryset:
+            if squad.max_members is None or squad.member_count < squad.max_members:
+                available_squads.append(squad)
+
+        return available_squads
 
     @property
     def remaining_slots(self):

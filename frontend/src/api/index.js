@@ -294,6 +294,10 @@ export const squadAPI = {
   // Send announcement to squad members
   sendAnnouncement: (squadId, data) =>
     apiClient.post(`/squads/${squadId}/send_announcement/`, data),
+
+  // Get available squads at the same center (for when a squad is full)
+  getAvailableAtCenter: (squadId) =>
+    apiClient.get(`/squads/${squadId}/available_at_center/`),
 };
 
 export const centerAPI = {

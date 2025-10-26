@@ -188,8 +188,13 @@ const Login = () => {
                 transition={{ duration: 0.5 }}
                 className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center mx-auto mb-4"
               >
-                <span className="text-3xl">🇰🇪</span>
-              </motion.div>
+            <img
+              src="/images/Githinji.png"
+              alt="Kenyan flag"
+              className="w-full h-full object-cover"
+            />             
+            
+   </motion.div>
               <motion.h1 
                 initial={{ y: -10, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
