@@ -1,9 +1,15 @@
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Home, Users, MapPin, Trophy, Plus } from 'lucide-react';
+import { isAuthenticated } from '../api';
 
 const BottomNav = () => {
   const location = useLocation();
   const navigate = useNavigate();
+
+  // Don't render bottom nav if user is not authenticated
+  if (!isAuthenticated()) {
+    return null;
+  }
 
   const navItems = [
     { path: '/', icon: Home, label: 'Dashboard' },

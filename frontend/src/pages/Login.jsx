@@ -158,17 +158,17 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 flex items-center justify-center p-4 relative overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 flex items-center justify-center p-3 sm:p-4 relative overflow-hidden">
       <div className="absolute inset-0 bg-white/30 backdrop-blur-sm"></div>
       
       <motion.div
         initial="hidden"
         animate="visible"
         variants={containerVariants}
-        className="max-w-md w-full relative z-10"
+        className="w-full max-w-[90vw] sm:max-w-md relative z-10"
       >
         {error && (
-          <motion.div variants={itemVariants} className="mb-6">
+          <motion.div variants={itemVariants} className="mb-4 sm:mb-6">
             <Alert 
               type="error" 
               message={error}
@@ -181,28 +181,20 @@ const Login = () => {
         <motion.div variants={itemVariants}>
           <Card className="overflow-hidden">
             {/* Header */}
-            <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-6 text-center text-white">
+            <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-4 sm:p-6 text-center text-white">
               <motion.div
                 initial={{ scale: 0.9, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 transition={{ duration: 0.5 }}
-                className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center mx-auto mb-4"
+                className="w-12 h-12 sm:w-16 sm:h-16 bg-white/20 rounded-xl sm:rounded-2xl flex items-center justify-center mx-auto mb-3 sm:mb-4"
               >
-                <span className="text-3xl">🇰🇪</span>
-{/* 
-                          <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center overflow-hidden">
-            <img
-              src="./images/Githinji.png"
-              alt="Kenyan flag"
-              className="w-full h-full object-cover"
-            />
-          </div> */}
+                <span className="text-2xl sm:text-3xl">🇰🇪</span>
               </motion.div>
               <motion.h1 
                 initial={{ y: -10, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
                 transition={{ delay: 0.1, duration: 0.5 }}
-                className="text-3xl font-bold mb-1"
+                className="text-2xl sm:text-3xl font-bold mb-1"
               >
                 Pamoja2Vote
               </motion.h1>
@@ -210,7 +202,7 @@ const Login = () => {
                 initial={{ y: -5, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
                 transition={{ delay: 0.2, duration: 0.5 }}
-                className="text-blue-100 text-sm"
+                className="text-blue-100 text-xs sm:text-sm"
               >
                 {step === 'phone' 
                   ? 'Welcome back! Please sign in to continue.' 
@@ -218,8 +210,8 @@ const Login = () => {
               </motion.p>
             </div>
 
-            {/* Form Content - Simplified without complex animations */}
-            <div className="p-6">
+            {/* Form Content */}
+            <div className="p-4 sm:p-6">
               <AnimatePresence mode="wait">
                 {step === 'phone' ? (
                   <motion.div
@@ -230,7 +222,7 @@ const Login = () => {
                     variants={formVariants}
                     transition={{ duration: 0.3 }}
                   >
-                    <form onSubmit={handlePhoneSubmit} className="space-y-6">
+                    <form onSubmit={handlePhoneSubmit} className="space-y-4 sm:space-y-6">
                       <motion.div variants={itemVariants}>
                         <Input
                           id="phone"
@@ -241,13 +233,14 @@ const Login = () => {
                           placeholder="+254 7XX XXX XXX"
                           startIcon={Phone}
                           required
+                          className="text-base" // Ensure proper font size on mobile
                         />
                       </motion.div>
 
-                      <motion.div variants={itemVariants} className="pt-2">
+                      <motion.div variants={itemVariants} className="pt-1 sm:pt-2">
                         <Button 
                           type="submit" 
-                          className="w-full"
+                          className="w-full text-sm sm:text-base py-3"
                           loading={loading}
                           disabled={!phoneNumber.trim()}
                         >
@@ -266,39 +259,39 @@ const Login = () => {
                     variants={formVariants}
                     transition={{ duration: 0.3 }}
                   >
-                    <form onSubmit={handleOTPSubmit} className="space-y-6">
+                    <form onSubmit={handleOTPSubmit} className="space-y-4 sm:space-y-6">
                       <motion.div variants={itemVariants} className="text-center">
-                        <p className="text-sm text-gray-600 mb-1">
+                        <p className="text-xs sm:text-sm text-gray-600 mb-1">
                           We've sent a verification code to
                         </p>
-                        <p className="font-medium text-gray-900">
+                        <p className="font-medium text-gray-900 text-sm sm:text-base">
                           {formatPhoneForDisplay(phoneNumber)}
                         </p>
                       </motion.div>
 
                       <motion.div variants={itemVariants}>
-                        <div className="mb-4 text-sm font-medium text-gray-700 text-center">
+                        <div className="mb-3 sm:mb-4 text-sm font-medium text-gray-700 text-center">
                           Enter OTP
                         </div>
                         
-                        {/* OTP Input with visible styling */}
-                        <div className="flex justify-center p-2">
+                        {/* Mobile-responsive OTP Input */}
+                        <div className="flex justify-center p-1 sm:p-2">
                           <OtpInput
                             value={otp}
                             onChange={setOtp}
                             onComplete={handleOTPSubmit}
                             length={6}
-                            className="justify-center gap-2"
-                            inputClassName="w-12 h-12 text-lg font-semibold border-2 border-blue-500 rounded-lg bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                            className="justify-center gap-1 sm:gap-2"
+                            inputClassName="w-10 h-10 sm:w-12 sm:h-12 text-base sm:text-lg font-semibold border-2 border-blue-500 rounded-lg bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-200"
                           />
                         </div>
                         
-                        <div className="mt-6 text-center">
+                        <div className="mt-4 sm:mt-6 text-center">
                           <button
                             type="button"
                             onClick={handleResendOTP}
                             disabled={resendTimer > 0 || loading}
-                            className={`text-sm font-medium ${
+                            className={`text-xs sm:text-sm font-medium ${
                               resendTimer > 0 ? 'text-gray-400' : 'text-blue-600 hover:text-blue-800'
                             } transition-colors`}
                           >
@@ -309,10 +302,10 @@ const Login = () => {
                         </div>
                       </motion.div>
 
-                      <motion.div variants={itemVariants} className="space-y-3 pt-4">
+                      <motion.div variants={itemVariants} className="space-y-2 sm:space-y-3 pt-2 sm:pt-4">
                         <Button 
                           type="submit" 
-                          className="w-full"
+                          className="w-full text-sm sm:text-base py-3"
                           loading={loading}
                           disabled={otp.length < 6}
                         >
@@ -323,11 +316,11 @@ const Login = () => {
                           type="button"
                           variant="ghost"
                           size="sm"
-                          className="w-full text-sm"
+                          className="w-full text-xs sm:text-sm py-2"
                           onClick={handleBackToPhone}
                           disabled={loading}
                         >
-                          <ArrowLeft className="h-4 w-4 mr-1" />
+                          <ArrowLeft className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
                           Back to phone number
                         </Button>
                       </motion.div>
@@ -343,7 +336,7 @@ const Login = () => {
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.5 }}
-                className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg mx-4 mb-4 text-center"
+                className="p-2 sm:p-3 bg-yellow-50 border border-yellow-200 rounded-lg mx-3 sm:mx-4 mb-3 sm:mb-4 text-center"
               >
                 <p className="text-xs text-yellow-800">
                   <span className="font-medium">Debug:</span> Step: {step} | OTP: {otp} | Length: {otp.length}
@@ -356,19 +349,19 @@ const Login = () => {
         {/* Find Centers Section */}
         <motion.div
           variants={itemVariants}
-          className="mt-6"
+          className="mt-4 sm:mt-6"
         >
-          <Card className="p-6 hover:shadow-lg transition-shadow cursor-pointer border-2 border-orange-200 hover:border-orange-300" onClick={handleFindCenters}>
+          <Card className="p-4 sm:p-6 hover:shadow-lg transition-shadow cursor-pointer border-2 border-orange-200 hover:border-orange-300" onClick={handleFindCenters}>
             <div className="flex items-center">
-              <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center mr-4">
-                <MapPin className="w-6 h-6 text-orange-600" />
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-orange-100 rounded-full flex items-center justify-center mr-3 sm:mr-4">
+                <MapPin className="w-5 h-5 sm:w-6 sm:h-6 text-orange-600" />
               </div>
-              <div className="flex-1">
-                <h3 className="font-semibold text-gray-900">Find Registration Centers</h3>
-                <p className="text-sm text-gray-600">Locate voter registration spots near you</p>
+              <div className="flex-1 min-w-0"> {/* Added min-w-0 to prevent text overflow */}
+                <h3 className="font-semibold text-gray-900 text-sm sm:text-base truncate">Find Registration Centers</h3>
+                <p className="text-xs sm:text-sm text-gray-600 truncate">Locate voter registration spots near you</p>
               </div>
-              <div className="text-orange-600">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="text-orange-600 flex-shrink-0">
+                <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                 </svg>
               </div>
@@ -379,10 +372,10 @@ const Login = () => {
         {/* Footer */}
         <motion.div 
           variants={itemVariants}
-          className="mt-6 text-center text-xs text-gray-500"
+          className="mt-4 sm:mt-6 text-center text-xs text-gray-500 px-2"
         >
-          <p>By continuing, you agree to our Terms of Service and Privacy Policy</p>
-          <p className="mt-1">© {new Date().getFullYear()} Pamoja2Vote. All rights reserved.</p>
+          <p className="text-[10px] sm:text-xs leading-tight">By continuing, you agree to our Terms of Service and Privacy Policy</p>
+          <p className="mt-1 text-[10px] sm:text-xs">© {new Date().getFullYear()} Pamoja2Vote. All rights reserved.</p>
         </motion.div>
       </motion.div>
     </div>
